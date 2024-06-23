@@ -60,7 +60,7 @@ compose.desktop {
 				iconFile.set(project.file("resources/app_icon.ico"))
 			}
 
-			packageName = "KeyloggerPlus"
+			packageName = "KtLogger"
 			packageVersion = "1.0.0"
 			modules("java.sql")
 		}
