@@ -40,7 +40,7 @@ fun MainWindow(
 			isMainWindowOpen.value = false
 		},
 		icon = icon,
-		title = "KeyloggerPlus",
+		title = "KtLogger",
 		visible = isMainWindowOpen.value,
 		transparent = true,
 		undecorated = true,

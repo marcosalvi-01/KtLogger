@@ -1,4 +1,4 @@
-rootProject.name = "KeyloggerPlus"
+rootProject.name = "KtLogger"
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 pluginManagement {
