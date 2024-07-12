@@ -1,8 +1,12 @@
 package keyboard
 
+import kotlinx.serialization.Serializable
+
 // Represent a layer in a keymap.
 // Each layer is a matrix of keys, where each key has a kc and a shifted kc.
+@Serializable
 data class KeyLayer(
+	val name: String,
 	val keys: List<List<LayerKey?>>,
 ) {
 	fun getWidth() = keys[0].size
@@ -23,11 +27,14 @@ data class KeyLayer(
 	}
 }
 
+@Serializable
 data class LayerKey(
 	val kc: KC,
 	val shiftedKC: KC? = null,
 )
 
+@Serializable
 data class Keymap(
+	val name: String,
 	val layers: List<KeyLayer>,
 )

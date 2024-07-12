@@ -4,6 +4,7 @@ plugins {
 	alias(libs.plugins.kotlinMultiplatform)
 
 	alias(libs.plugins.jetbrainsCompose)
+	kotlin("plugin.serialization") version "2.0.0"
 }
 
 kotlin {
@@ -28,12 +29,14 @@ kotlin {
 			implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.6.0")
 			implementation("com.google.code.gson:gson:2.8.9")
 			implementation("com.darkrockstudios:mpfilepicker:3.1.0")
+			implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
 
 			val exposedVersion = "0.45.0"
 			implementation("org.jetbrains.exposed:exposed-core:$exposedVersion")
 			implementation("org.jetbrains.exposed:exposed-dao:$exposedVersion")
 			implementation("org.jetbrains.exposed:exposed-jdbc:$exposedVersion")
 			implementation("org.jetbrains.exposed:exposed-kotlin-datetime:$exposedVersion")
+			implementation("org.jetbrains.exposed:exposed-json:$exposedVersion")
 
 			implementation("org.xerial:sqlite-jdbc:3.45.2.0")
 			implementation("ch.qos.logback:logback-classic:1.2.9")

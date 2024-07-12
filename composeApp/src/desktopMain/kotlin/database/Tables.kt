@@ -1,7 +1,10 @@
 package database
 
 
+import keyboard.Keymap
+import kotlinx.serialization.json.Json
 import org.jetbrains.exposed.sql.Table
+import org.jetbrains.exposed.sql.json.json
 import org.jetbrains.exposed.sql.kotlin.datetime.duration
 
 object Windows : Table() {
@@ -74,4 +77,24 @@ object Selected : Table() {
 	val selected = bool("selected")
 
 	override val primaryKey = PrimaryKey(windowId)
+}
+
+internal val keymapsJson = Json {
+	ignoreUnknownKeys = true
+}
+
+// Table to store the keymaps
+object Keymaps : Table() {
+	val name = varchar("name", length = 255)
+	val keymap = json(
+		name = "keymap",
+		serialize = {
+			keymapsJson.encodeToString(Keymap.serializer(), it)
+		},
+		deserialize = {
+			keymapsJson.decodeFromString(Keymap.serializer(), it)
+		}
+	)
+
+	override val primaryKey = PrimaryKey(name)
 }

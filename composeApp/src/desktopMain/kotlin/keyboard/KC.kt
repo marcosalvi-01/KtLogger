@@ -164,6 +164,9 @@ enum class KC(
 	// -------- UNKNOWN --------
 	UNKNOWN("Unknown"),
 
+	// -------- EMPTY --------
+	EMPTY("")
+
 	;
 
 	fun isModifier(): Boolean {

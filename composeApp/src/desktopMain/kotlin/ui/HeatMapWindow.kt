@@ -1,21 +1,23 @@
 package ui
 
-import androidx.compose.foundation.Canvas
+import DropdownMenuNoPaddingVeitical
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.window.WindowDraggableArea
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.rounded.Close
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
@@ -24,22 +26,19 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.lerp
-import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.onPointerEvent
-import androidx.compose.ui.text.TextMeasurer
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.drawText
-import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.*
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowState
+import database.Database
 import icon
-import keyboard.KC
-import keyboard.KeyLayer
-import keyboard.MyKeymap
+import keyboard.*
 
 @Composable
 fun HeatmapWindow(
@@ -49,9 +48,7 @@ fun HeatmapWindow(
 	val windowState = WindowState(width = 1000.dp)
 
 	Window(
-		onCloseRequest = {
-			isHeatmapWindowOpen.value = false
-		},
+		onCloseRequest = { isHeatmapWindowOpen.value = false },
 		state = windowState,
 		title = "Heatmap",
 		icon = icon,
@@ -60,21 +57,19 @@ fun HeatmapWindow(
 		undecorated = true
 	) {
 		Surface(
-			modifier = Modifier.fillMaxSize().padding(5.dp).shadow(3.dp, RoundedCornerShape(10.dp)),
+			modifier = Modifier
+				.fillMaxSize()
+				.padding(5.dp)
+				.shadow(3.dp, RoundedCornerShape(10.dp)),
 			color = MaterialTheme.colors.background,
 			shape = RoundedCornerShape(10.dp)
 		) {
-			Column(
-				modifier = Modifier.fillMaxSize()
-			) {
+			Column(modifier = Modifier.fillMaxSize()) {
 				WindowDraggableArea {
 					TopAppBar(
 						title = { Text("Heatmap") },
 						actions = {
-							// Close the window
-							IconButton(onClick = {
-								isHeatmapWindowOpen.value = false
-							}) {
+							IconButton(onClick = { isHeatmapWindowOpen.value = false }) {
 								Icon(
 									imageVector = Icons.Rounded.Close,
 									contentDescription = "Close",
@@ -84,13 +79,142 @@ fun HeatmapWindow(
 						}
 					)
 				}
+				HeatmapBody(pressedKeys)
+			}
+		}
+	}
+}
 
-				Column(
-					modifier = Modifier.fillMaxSize()
-				) {
-					// Display the heatmap
-					KeyboardCanvas(MyKeymap.layers(), pressedKeys)
+@Composable
+fun HeatmapBody(pressedKeys: Map<KC, Int>) {
+	val scrollState = rememberScrollState()
+	var keymaps by remember { mutableStateOf(Database.getKeymaps()) }
+	var selectedKeymap by remember { mutableStateOf(keymaps.firstOrNull()) }
+
+	Box {
+		Column(
+			modifier = Modifier
+				.fillMaxSize()
+				.verticalScroll(scrollState)
+				.padding(top = 10.dp, bottom = 15.dp)
+		) {
+			Box(
+				modifier = Modifier.align(Alignment.CenterHorizontally)
+			) {
+				KeymapSelector(
+					keymaps = keymaps,
+					onKeymapSelected = { selectedKeymap = it },
+					onKeymapDeleted = {
+						Database.deleteKeymap(it.name)
+						keymaps = Database.getKeymaps()
+						selectedKeymap = keymaps.firstOrNull()
+					},
+					onNewKeymapCreated = {
+						Database.createKeymap(defaultKeymap.copy(name = "New keymap"))
+						keymaps = Database.getKeymaps()
+						selectedKeymap = keymaps.firstOrNull()
+					}
+				)
+			}
+
+			KeyboardCanvas(selectedKeymap, pressedKeys)
+		}
+		VerticalScrollbar(
+			modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
+			adapter = rememberScrollbarAdapter(scrollState)
+		)
+	}
+}
+
+@Composable
+fun KeymapSelector(
+	keymaps: List<Keymap>,
+	onKeymapSelected: (Keymap) -> Unit,
+	onKeymapDeleted: (Keymap) -> Unit,
+	onNewKeymapCreated: () -> Unit,
+) {
+	var showKeymapsDropdown by remember { mutableStateOf(false) }
+	Button(
+		onClick = { showKeymapsDropdown = true },
+	) {
+		Text("Keymaps")
+	}
+	DropdownMenuNoPaddingVeitical(
+		expanded = showKeymapsDropdown,
+		onDismissRequest = { showKeymapsDropdown = false },
+		modifier = Modifier
+			.width(250.dp)
+			.background(MaterialTheme.colors.surface)
+			.padding(0.dp)
+	) {
+		keymaps.forEach { keymap ->
+			DropdownMenuItem(
+				onClick = {
+					onKeymapSelected(keymap)
+					showKeymapsDropdown = false
 				}
+			) {
+				Text(
+					text = keymap.name,
+					modifier = Modifier.weight(1f)
+				)
+				Spacer(modifier = Modifier.width(8.dp))
+				IconButton(
+					onClick = {
+						onKeymapDeleted(keymap)
+						showKeymapsDropdown = false
+					},
+					modifier = Modifier.size(32.dp)
+				) {
+					Icon(
+						imageVector = Icons.Filled.Delete,
+						contentDescription = "Delete",
+						tint = MaterialTheme.colors.onSurface.copy(alpha = 0.7f),
+						modifier = Modifier.size(20.dp)
+					)
+				}
+				IconButton(
+					onClick = {
+						showKeymapsDropdown = false
+						// TODO: Implement edit functionality
+					},
+					modifier = Modifier.size(32.dp)
+				) {
+					Icon(
+						imageVector = Icons.Filled.Edit,
+						contentDescription = "Edit",
+						tint = MaterialTheme.colors.onSurface.copy(alpha = 0.7f),
+						modifier = Modifier.size(20.dp)
+					)
+				}
+			}
+			if (keymap != keymaps.last()) {
+				Divider(color = MaterialTheme.colors.onSurface.copy(alpha = 0.1f))
+			}
+		}
+		Divider(color = MaterialTheme.colors.onSurface.copy(alpha = 0.2f), thickness = 1.dp)
+		DropdownMenuItem(
+			onClick = {
+				onNewKeymapCreated()
+				showKeymapsDropdown = false
+			}
+		) {
+			Row(
+				modifier = Modifier.fillMaxWidth(),
+				verticalAlignment = Alignment.CenterVertically
+			) {
+				Text(
+					"New keymap",
+					style = MaterialTheme.typography.button.copy(fontWeight = FontWeight.Bold),
+					color = MaterialTheme.colors.onPrimary,
+				)
+				Spacer(Modifier.weight(1f))
+				Icon(
+					imageVector = Icons.Filled.Add,
+					contentDescription = "Create",
+					tint = MaterialTheme.colors.onPrimary,
+					modifier = Modifier.size(24.dp)
+				)
 			}
 		}
 	}
@@ -98,33 +222,61 @@ fun HeatmapWindow(
 
 @Composable
 private fun KeyboardCanvas(
-	layers: List<KeyLayer>,
+	keymap: Keymap?,
 	pressedKeys: Map<KC, Int>,
 ) {
-	// Create a scroll state
-	val scrollState = rememberScrollState()
+	if (keymap == null) return
+
 	// Create a TextMeasurer
 	val textMeasurer = rememberTextMeasurer()
 
-	// Show the layers in a lazy column
-	Column(
-		modifier = Modifier
-			.verticalScroll(scrollState)  // Add verticalScroll modifier
-	) {
-		for (layer in layers) {
-			val layerPressedKeys = pressedKeys.filterKeys { layer.contains(it) }
-			KeyLayer(
-				layer,
-				layerPressedKeys,
-				200.dp,
-				MaterialTheme.colors.onBackground,
-				textMeasurer
-			)
+	Box(Modifier.fillMaxSize()) {
+		// Show the layers in a lazy column
+		Column(
+			modifier = Modifier
+		) {
+			for (layer in keymap.layers) {
+				Text(
+					text = layer.name,
+					style = MaterialTheme.typography.h5,
+					modifier = Modifier.padding(start = 20.dp)
+				)
+
+				val layerPressedKeys = pressedKeys.filterKeys { layer.contains(it) }
+				KeyLayer(
+					layer,
+					layerPressedKeys,
+					200.dp,
+					MaterialTheme.colors.onBackground,
+					textMeasurer
+				)
+			}
+
+			Box(
+				modifier = Modifier
+					.align(Alignment.CenterHorizontally)
+					.background(color = MaterialTheme.colors.primary, shape = CircleShape)
+					.size(48.dp), // Adjust size to control the overall size of the circle
+				contentAlignment = Alignment.Center
+			) {
+				IconButton(
+					onClick = {
+						// Show a dialog to create a new layer
+						TODO()
+					}
+				) {
+					Icon(
+						imageVector = Icons.Filled.Add,
+						contentDescription = "Create",
+						tint = MaterialTheme.colors.onBackground
+					)
+				}
+			}
 		}
 	}
 }
 
-@OptIn(ExperimentalComposeUiApi::class)
+@OptIn(ExperimentalComposeUiApi::class, ExperimentalTextApi::class)
 @Composable
 private fun KeyLayer(
 	layer: KeyLayer,
@@ -211,7 +363,8 @@ private fun KeyLayer(
 				textMeasurer = textMeasurer,
 				style = TextStyle(
 					color = textColor,
-					fontSize = 20.sp
+					fontSize = 20.sp,
+					fontFamily = FontFamily("JetBrains Mono")
 				),
 				// Draw the text at the center of the bottom left key
 				topLeft = Offset(x = textX, y = textY)
@@ -222,7 +375,8 @@ private fun KeyLayer(
 				textMeasurer = textMeasurer,
 				style = TextStyle(
 					color = textColor,
-					fontSize = 20.sp
+					fontSize = 20.sp,
+					fontFamily = FontFamily("JetBrains Mono")
 				),
 				// Draw the text at the center of the bottom left key
 				topLeft = Offset(x = percentageTextX, y = percentageTextY)
@@ -231,6 +385,7 @@ private fun KeyLayer(
 	}
 }
 
+@OptIn(ExperimentalTextApi::class)
 private fun DrawScope.key(
 	kc: KC,
 	presses: Int,
@@ -262,7 +417,7 @@ private fun DrawScope.key(
 		top = y
 	) {
 		// Draw a rectangle for the key
-		drawRect(
+		drawRoundRect(
 			color = Color.LightGray,
 			size = keySize,
 			alpha = 0.8f,
@@ -270,6 +425,7 @@ private fun DrawScope.key(
 			colorFilter = ColorFilter.tint(
 				interpolateColor(presses.toFloat() / maxPresses)
 			),
+			cornerRadius = CornerRadius(x = 10f, y = 10f)
 		)
 
 		// Calculate the offset based on the size of the key and the text
@@ -285,6 +441,9 @@ private fun DrawScope.key(
 			textMeasurer = textMeasurer,
 			text = kc.symbol,
 			topLeft = offset,
+			style = TextStyle(
+				fontFamily = FontFamily("JetBrains Mono")
+			)
 		)
 	}
 }

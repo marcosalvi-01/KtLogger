@@ -1,6 +1,8 @@
 package database
 
 import keyboard.KC
+import keyboard.Keymap
+import keyboard.defaultKeymap
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import logger.MouseButton
@@ -30,7 +32,13 @@ object Database {
 				Bigrams,
 				Trigrams,
 				Selected,
+				Keymaps,
 			)
+
+			// Create the default keymap if it doesn't exist
+			if (Keymaps.selectAll().count().toInt() == 0) {
+				createKeymap(defaultKeymap)
+			}
 		}
 	}
 
@@ -327,6 +335,43 @@ object Database {
 	fun deselectAllWindows() {
 		transaction {
 			Selected.update { it[selected] = false }
+		}
+	}
+
+	fun createKeymap(keymap: Keymap) {
+		transaction {
+			Keymaps.insert {
+				it[name] = keymap.name
+				it[Keymaps.keymap] = keymap
+			}
+		}
+	}
+
+	fun getKeymap(name: String): Keymap? {
+		return transaction {
+			Keymaps.select { Keymaps.name eq name }
+				.map { it[Keymaps.keymap] }
+				.firstOrNull()
+		}
+	}
+
+	fun deleteKeymap(name: String) {
+		transaction {
+			Keymaps.deleteWhere { Keymaps.name eq name }
+		}
+	}
+
+	fun updateKeymap(keymap: Keymap) {
+		transaction {
+			Keymaps.update({ Keymaps.name eq keymap.name }) {
+				it[Keymaps.keymap] = keymap
+			}
+		}
+	}
+
+	fun getKeymaps(): List<Keymap> {
+		return transaction {
+			Keymaps.selectAll().map { it[Keymaps.keymap] }
 		}
 	}
 }

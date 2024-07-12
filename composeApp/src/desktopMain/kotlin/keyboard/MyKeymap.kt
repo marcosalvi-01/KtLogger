@@ -1,10 +1,14 @@
 package keyboard
 
+private val EMPTY = LayerKey(KC.EMPTY)
+
 enum class MyKeymap(
-	val layer: KeyLayer
+	val layer: KeyLayer,
 ) {
+
 	BASE(
 		KeyLayer(
+			"Base",
 			listOf(
 				listOf(
 					LayerKey(KC.Q),
@@ -64,13 +68,14 @@ enum class MyKeymap(
 
 	SYMBOLS(
 		KeyLayer(
+			"Symbols",
 			listOf(
 				listOf(
-					null,
-					null,
-					null,
-					null,
-					null,
+					EMPTY,
+					EMPTY,
+					EMPTY,
+					EMPTY,
+					EMPTY,
 
 					null,
 
@@ -81,11 +86,11 @@ enum class MyKeymap(
 					LayerKey(KC.HASH),
 				),
 				listOf(
-					null,
-					null,
-					null,
-					null,
-					null,
+					EMPTY,
+					EMPTY,
+					EMPTY,
+					EMPTY,
+					EMPTY,
 
 					null,
 
@@ -96,11 +101,11 @@ enum class MyKeymap(
 					LayerKey(KC.LEFT_SQUARE_BRACKET),
 				),
 				listOf(
-					null,
-					null,
-					null,
-					null,
-					null,
+					EMPTY,
+					EMPTY,
+					EMPTY,
+					EMPTY,
+					EMPTY,
 
 					null,
 
@@ -113,21 +118,157 @@ enum class MyKeymap(
 				listOf(
 					null,
 					null,
-					null,
-					null,
-					null,
+					EMPTY,
+					EMPTY,
+					EMPTY,
 
 					null,
 
 					LayerKey(KC.PLUS),
 					LayerKey(KC.LEFT_PARENTHESIS),
-					null,
+					EMPTY,
 					null,
 					null,
 				)
 			)
 		)
-	)
+	),
+
+	NAVIGATION(
+		KeyLayer(
+			"Navigation",
+			listOf(
+				listOf(
+					EMPTY,
+					LayerKey(KC.HOME),
+					LayerKey(KC.UP),
+					LayerKey(KC.END),
+					EMPTY,
+
+					null,
+
+					EMPTY,
+					EMPTY,
+					EMPTY,
+					EMPTY,
+					EMPTY,
+				),
+				listOf(
+					LayerKey(KC.PAGE_UP),
+					LayerKey(KC.LEFT),
+					LayerKey(KC.DOWN),
+					LayerKey(KC.RIGHT),
+					EMPTY,
+
+					null,
+
+					EMPTY,
+					EMPTY,
+					EMPTY,
+					EMPTY,
+					EMPTY,
+				),
+				listOf(
+					LayerKey(KC.PAGE_DOWN),
+					EMPTY,
+					EMPTY,
+					EMPTY,
+					EMPTY,
+
+					null,
+
+					EMPTY,
+					EMPTY,
+					EMPTY,
+					EMPTY,
+					EMPTY,
+				),
+				listOf(
+					null,
+					null,
+					EMPTY,
+					EMPTY,
+					EMPTY,
+
+					null,
+
+					EMPTY,
+					EMPTY,
+					EMPTY,
+					null,
+					null,
+				)
+			)
+		)
+	),
+
+	NUMBERS(
+		KeyLayer(
+			"Numbers",
+			listOf(
+				listOf(
+					EMPTY,
+					EMPTY,
+					EMPTY,
+					EMPTY,
+					EMPTY,
+
+					null,
+
+					EMPTY,
+					LayerKey(KC.SEVEN),
+					LayerKey(KC.EIGHT),
+					LayerKey(KC.NINE),
+					EMPTY,
+				),
+				listOf(
+					EMPTY,
+					EMPTY,
+					EMPTY,
+					EMPTY,
+					EMPTY,
+
+					null,
+
+					EMPTY,
+					LayerKey(KC.FOUR),
+					LayerKey(KC.FIVE),
+					LayerKey(KC.SIX),
+					LayerKey(KC.CIRCUMFLEX),
+				),
+				listOf(
+					EMPTY,
+					EMPTY,
+					EMPTY,
+					EMPTY,
+					EMPTY,
+
+					null,
+
+					EMPTY,
+					LayerKey(KC.ONE),
+					LayerKey(KC.TWO),
+					LayerKey(KC.THREE),
+					EMPTY,
+				),
+				listOf(
+					null,
+					null,
+					LayerKey(KC.EMPTY),
+					LayerKey(KC.EMPTY),
+					LayerKey(KC.EMPTY),
+
+					null,
+
+					LayerKey(KC.EMPTY),
+					LayerKey(KC.ZERO),
+					LayerKey(KC.EMPTY),
+					null,
+					null,
+				)
+			)
+		)
+	),
 
 	;
 
@@ -135,3 +276,5 @@ enum class MyKeymap(
 		fun layers() = entries.map { it.layer }
 	}
 }
+
+val defaultKeymap = Keymap("Default", MyKeymap.layers())

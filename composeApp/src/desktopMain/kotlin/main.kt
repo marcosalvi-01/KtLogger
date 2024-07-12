@@ -50,7 +50,7 @@ fun main() {
 		icon = painterResource("app_icon.png")
 
 		MaterialTheme(
-			colors = matteBlueTheme
+			colors = matteBlueTheme,
 		) {
 			// The main window
 			MainWindow(isMainWindowOpen)
