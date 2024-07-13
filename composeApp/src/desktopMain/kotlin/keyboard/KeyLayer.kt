@@ -11,13 +11,13 @@ data class KeyLayer(
 ) {
 	fun getWidth() = keys[0].size
 	fun getHeight() = keys.size
-
+	
 	fun getKc(row: Int, col: Int): KC {
 		if (row < 0 || row >= getHeight() || col < 0 || col >= getWidth())
 			return KC.UNKNOWN
 		return keys[row][col]?.kc ?: KC.UNKNOWN
 	}
-
+	
 	fun contains(kc: KC): Boolean {
 		for (row in keys)
 			for (key in row)

@@ -64,32 +64,45 @@ fun HeatmapWindow(
 			color = MaterialTheme.colors.background,
 			shape = RoundedCornerShape(10.dp)
 		) {
-			Column(modifier = Modifier.fillMaxSize()) {
-				WindowDraggableArea {
-					TopAppBar(
-						title = { Text("Heatmap") },
-						actions = {
-							IconButton(onClick = { isHeatmapWindowOpen.value = false }) {
-								Icon(
-									imageVector = Icons.Rounded.Close,
-									contentDescription = "Close",
-									tint = MaterialTheme.colors.onBackground
-								)
+			val areYouSureDialogState = remember { mutableStateOf<AreYouSureDialog?>(null) }
+			
+			println(areYouSureDialogState.value)
+			
+			Box {
+				Column(modifier = Modifier.fillMaxSize()) {
+					WindowDraggableArea {
+						TopAppBar(
+							title = { Text("Heatmap") },
+							actions = {
+								IconButton(onClick = { isHeatmapWindowOpen.value = false }) {
+									Icon(
+										imageVector = Icons.Rounded.Close,
+										contentDescription = "Close",
+										tint = MaterialTheme.colors.onBackground
+									)
+								}
 							}
-						}
-					)
+						)
+					}
+					HeatmapBody(pressedKeys, areYouSureDialogState)
 				}
-				HeatmapBody(pressedKeys)
+				// Show a dialog to delete the layer
+				areYouSureDialogState.value?.let {
+					AreYouSureDialog(it)
+				}
 			}
 		}
 	}
 }
 
 @Composable
-fun HeatmapBody(pressedKeys: Map<KC, Int>) {
+fun HeatmapBody(
+	pressedKeys: Map<KC, Int>,
+	areYouSureDialogState: MutableState<AreYouSureDialog?>,
+) {
 	val scrollState = rememberScrollState()
 	var keymaps by remember { mutableStateOf(Database.getKeymaps()) }
-	var selectedKeymap by remember { mutableStateOf(keymaps.firstOrNull()) }
+	val selectedKeymap = remember { mutableStateOf(keymaps.firstOrNull()) }
 	
 	Box {
 		Column(
@@ -102,7 +115,7 @@ fun HeatmapBody(pressedKeys: Map<KC, Int>) {
 				modifier = Modifier.padding(end = 15.dp)
 			) {
 				Text(
-					text = selectedKeymap?.name ?: "",
+					text = selectedKeymap.value?.name ?: "",
 					style = MaterialTheme.typography.h6,
 					modifier = Modifier.padding(start = 20.dp).align(Alignment.CenterVertically)
 				)
@@ -112,19 +125,20 @@ fun HeatmapBody(pressedKeys: Map<KC, Int>) {
 				Box {
 					KeymapSelector(
 						keymaps = keymaps,
-						onKeymapSelected = { selectedKeymap = it },
+						onKeymapSelected = { selectedKeymap.value = it },
 						onKeymapDeleted = {
 							Database.deleteKeymap(it.name)
 							keymaps = Database.getKeymaps()
 							// If the selected keymap was deleted, select the first keymap
-							if (selectedKeymap == it)
-								selectedKeymap = keymaps.firstOrNull()
+							if (selectedKeymap.value == it)
+								selectedKeymap.value = keymaps.firstOrNull()
 						},
 						onNewKeymapCreated = {
 							Database.createKeymap(defaultKeymap.copy(name = "New keymap"))
 							keymaps = Database.getKeymaps()
-							selectedKeymap = keymaps.firstOrNull()
-						}
+							selectedKeymap.value = keymaps.firstOrNull()
+						},
+						areYouSureDialogState = areYouSureDialogState
 					)
 				}
 			}
@@ -134,7 +148,7 @@ fun HeatmapBody(pressedKeys: Map<KC, Int>) {
 				modifier = Modifier.padding(start = 15.dp)
 			)
 			
-			KeyboardCanvas(selectedKeymap, pressedKeys)
+			KeyboardCanvas(selectedKeymap, pressedKeys, areYouSureDialogState)
 		}
 		VerticalScrollbar(
 			modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
@@ -149,6 +163,7 @@ fun KeymapSelector(
 	onKeymapSelected: (Keymap) -> Unit,
 	onKeymapDeleted: (Keymap) -> Unit,
 	onNewKeymapCreated: () -> Unit,
+	areYouSureDialogState: MutableState<AreYouSureDialog?>,
 ) {
 	var showKeymapsDropdown by remember { mutableStateOf(false) }
 	Button(
@@ -171,15 +186,27 @@ fun KeymapSelector(
 					showKeymapsDropdown = false
 				}
 			) {
+				// Display the keymap name
 				Text(
 					text = keymap.name,
 					modifier = Modifier.weight(1f)
 				)
+				
 				Spacer(modifier = Modifier.width(8.dp))
+				
+				// Delete button
 				IconButton(
 					onClick = {
-						onKeymapDeleted(keymap)
-						showKeymapsDropdown = false
+						areYouSureDialogState.value = AreYouSureDialog(
+							title = "Delete keymap",
+							text = "Are you sure you want to delete the keymap?",
+							isDestructive = true,
+							onYes = {
+								onKeymapDeleted(keymap)
+								areYouSureDialogState.value = null
+							},
+							onNo = { areYouSureDialogState.value = null }
+						)
 					},
 					modifier = Modifier.size(32.dp)
 				) {
@@ -190,6 +217,8 @@ fun KeymapSelector(
 						modifier = Modifier.size(20.dp)
 					)
 				}
+				
+				// Edit button
 				IconButton(
 					onClick = {
 						showKeymapsDropdown = false
@@ -239,26 +268,59 @@ fun KeymapSelector(
 
 @Composable
 private fun KeyboardCanvas(
-	keymap: Keymap?,
+	keymap: MutableState<Keymap?>,
 	pressedKeys: Map<KC, Int>,
+	areYouSureDialogState: MutableState<AreYouSureDialog?>,
 ) {
-	if (keymap == null) return
+	if (keymap.value == null) return
 	
 	// Create a TextMeasurer
 	val textMeasurer = rememberTextMeasurer()
 	
 	Box(Modifier.fillMaxSize()) {
-		// Show the layers in a lazy column
-		Column(
-			modifier = Modifier
-		) {
-			for (layer in keymap.layers) {
-				Text(
-					text = layer.name,
-					style = MaterialTheme.typography.h5,
-					modifier = Modifier.padding(start = 20.dp, top = 10.dp)
-				)
+		Column {
+			for (layer in keymap.value!!.layers) {
+				Row(
+					modifier = Modifier.fillMaxWidth(),
+					verticalAlignment = Alignment.CenterVertically
+				) {
+					// The title of the layer
+					Text(
+						text = layer.name,
+						style = MaterialTheme.typography.h5,
+						modifier = Modifier.padding(start = 20.dp, top = 10.dp)
+					)
+					
+					Spacer(modifier = Modifier.weight(1f))
+					
+					// Delete the layer
+					IconButton(
+						onClick = {
+							areYouSureDialogState.value = AreYouSureDialog(
+								title = "Delete layer",
+								text = "Are you sure you want to delete the layer?",
+								isDestructive = true,
+								onYes = {
+									val updatedKeymap = keymap.value!!.copy(
+										layers = keymap.value!!.layers - layer
+									)
+									Database.updateKeymap(updatedKeymap)
+									keymap.value = updatedKeymap
+									areYouSureDialogState.value = null
+								},
+								onNo = { areYouSureDialogState.value = null }
+							)
+						}
+					) {
+						Icon(
+							imageVector = Icons.Filled.Delete,
+							contentDescription = "Delete",
+							tint = MaterialTheme.colors.onBackground
+						)
+					}
+				}
 				
+				// The keys in the layer
 				val layerPressedKeys = pressedKeys.filterKeys { layer.contains(it) }
 				KeyLayer(
 					layer,
@@ -510,3 +572,69 @@ fun interpolateColor(value: Float): Color {
 	
 	return lerp(palette[index], palette[index + 1], fraction)
 }
+
+@Composable
+fun AreYouSureDialog(state: AreYouSureDialog) {
+	AlertDialog(
+		onDismissRequest = state.onNo,
+		title = {
+			Text(
+				text = state.title,
+				style = MaterialTheme.typography.h6,
+				fontWeight = FontWeight.Bold
+			)
+		},
+		text = {
+			Text(
+				text = state.text,
+				style = MaterialTheme.typography.body1
+			)
+		},
+		shape = RoundedCornerShape(16.dp),
+		backgroundColor = MaterialTheme.colors.surface,
+		contentColor = MaterialTheme.colors.onSurface,
+		buttons = {
+			Row(
+				modifier = Modifier
+					.fillMaxWidth()
+					.padding(horizontal = 16.dp, vertical = 8.dp),
+				horizontalArrangement = Arrangement.End
+			) {
+				TextButton(
+					onClick = state.onNo,
+					colors = ButtonDefaults.textButtonColors(
+						contentColor = MaterialTheme.colors.onSurface.copy(alpha = 0.6f)
+					)
+				) {
+					Text(
+						text = state.dismissButtonText,
+						fontWeight = FontWeight.Medium
+					)
+				}
+				Spacer(modifier = Modifier.width(8.dp))
+				Button(
+					onClick = state.onYes,
+					colors = ButtonDefaults.buttonColors(
+						backgroundColor = if (state.isDestructive) MaterialTheme.colors.error else MaterialTheme.colors.primary,
+						contentColor = Color.White
+					)
+				) {
+					Text(
+						text = state.confirmButtonText,
+						fontWeight = FontWeight.Bold
+					)
+				}
+			}
+		}
+	)
+}
+
+data class AreYouSureDialog(
+	val title: String,
+	val text: String,
+	val isDestructive: Boolean = false,
+	val confirmButtonText: String = "Yes",
+	val dismissButtonText: String = "No",
+	var onYes: () -> Unit,
+	var onNo: () -> Unit,
+)
