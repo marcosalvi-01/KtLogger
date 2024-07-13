@@ -15,6 +15,11 @@ corpus.**
 You are free to use it, but it is not intended to be a finished product. You are welcome to make any changes you want or
 to contribute to the project.
 
+**Note: The application to run correctly needs to be run as an administrator.**
+
+PS: After installing if you don't see the application in the start menu, you can find it in the installation
+directory (`C:\Program Files\KtLogger`).
+
 <img src="./images/img.png" alt="Screenshot" width="500"/>
 <img src="./images/img_1.png" alt="Screenshot" width="500"/>
 <img src="./images/img_2.png" alt="Screenshot" width="500"/>
