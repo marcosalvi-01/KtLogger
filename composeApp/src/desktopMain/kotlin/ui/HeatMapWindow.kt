@@ -46,7 +46,7 @@ fun HeatmapWindow(
 	pressedKeys: Map<KC, Int>,
 ) {
 	val windowState = WindowState(width = 1000.dp)
-
+	
 	Window(
 		onCloseRequest = { isHeatmapWindowOpen.value = false },
 		state = windowState,
@@ -90,7 +90,7 @@ fun HeatmapBody(pressedKeys: Map<KC, Int>) {
 	val scrollState = rememberScrollState()
 	var keymaps by remember { mutableStateOf(Database.getKeymaps()) }
 	var selectedKeymap by remember { mutableStateOf(keymaps.firstOrNull()) }
-
+	
 	Box {
 		Column(
 			modifier = Modifier
@@ -98,30 +98,42 @@ fun HeatmapBody(pressedKeys: Map<KC, Int>) {
 				.verticalScroll(scrollState)
 				.padding(top = 10.dp, bottom = 15.dp, end = 15.dp)
 		) {
-			Box(
-				modifier = Modifier.align(Alignment.End).padding(end = 15.dp)
+			Row(
+				modifier = Modifier.padding(end = 15.dp)
 			) {
-				KeymapSelector(
-					keymaps = keymaps,
-					onKeymapSelected = { selectedKeymap = it },
-					onKeymapDeleted = {
-						Database.deleteKeymap(it.name)
-						keymaps = Database.getKeymaps()
-						selectedKeymap = keymaps.firstOrNull()
-					},
-					onNewKeymapCreated = {
-						Database.createKeymap(defaultKeymap.copy(name = "New keymap"))
-						keymaps = Database.getKeymaps()
-						selectedKeymap = keymaps.firstOrNull()
-					}
+				Text(
+					text = selectedKeymap?.name ?: "",
+					style = MaterialTheme.typography.h6,
+					modifier = Modifier.padding(start = 20.dp).align(Alignment.CenterVertically)
 				)
+				
+				Spacer(modifier = Modifier.weight(1f))
+				
+				Box {
+					KeymapSelector(
+						keymaps = keymaps,
+						onKeymapSelected = { selectedKeymap = it },
+						onKeymapDeleted = {
+							Database.deleteKeymap(it.name)
+							keymaps = Database.getKeymaps()
+							// If the selected keymap was deleted, select the first keymap
+							if (selectedKeymap == it)
+								selectedKeymap = keymaps.firstOrNull()
+						},
+						onNewKeymapCreated = {
+							Database.createKeymap(defaultKeymap.copy(name = "New keymap"))
+							keymaps = Database.getKeymaps()
+							selectedKeymap = keymaps.firstOrNull()
+						}
+					)
+				}
 			}
-
+			
 			Divider(
 				color = MaterialTheme.colors.onSurface.copy(alpha = 0.1f),
 				modifier = Modifier.padding(start = 15.dp)
 			)
-
+			
 			KeyboardCanvas(selectedKeymap, pressedKeys)
 		}
 		VerticalScrollbar(
@@ -231,10 +243,10 @@ private fun KeyboardCanvas(
 	pressedKeys: Map<KC, Int>,
 ) {
 	if (keymap == null) return
-
+	
 	// Create a TextMeasurer
 	val textMeasurer = rememberTextMeasurer()
-
+	
 	Box(Modifier.fillMaxSize()) {
 		// Show the layers in a lazy column
 		Column(
@@ -244,9 +256,9 @@ private fun KeyboardCanvas(
 				Text(
 					text = layer.name,
 					style = MaterialTheme.typography.h5,
-					modifier = Modifier.padding(start = 20.dp)
+					modifier = Modifier.padding(start = 20.dp, top = 10.dp)
 				)
-
+				
 				val layerPressedKeys = pressedKeys.filterKeys { layer.contains(it) }
 				KeyLayer(
 					layer,
@@ -255,19 +267,20 @@ private fun KeyboardCanvas(
 					MaterialTheme.colors.onBackground,
 					textMeasurer
 				)
-
+				
 				Divider(
 					color = MaterialTheme.colors.onSurface.copy(alpha = 0.1f),
 					modifier = Modifier.padding(start = 15.dp)
 				)
 			}
-
+			
+			Spacer(modifier = Modifier.height(20.dp))
+			
 			Box(
 				modifier = Modifier
 					.align(Alignment.CenterHorizontally)
 					.background(color = MaterialTheme.colors.primary, shape = CircleShape)
-					.size(48.dp)
-					.padding(top = 10.dp),
+					.size(48.dp),
 				contentAlignment = Alignment.Center
 			) {
 				IconButton(
@@ -298,11 +311,11 @@ private fun KeyLayer(
 ) {
 	val mousePosition = remember { mutableStateOf(Offset.Zero) }
 	val hoveredKey = remember { mutableStateOf<KC?>(null) }
-
+	
 	val keySpacing = 10.dp
-
+	
 	val keyTotals = pressedKeys.values.sum()
-
+	
 	Canvas(
 		modifier = Modifier.height(height)
 			.fillMaxWidth()
@@ -315,16 +328,16 @@ private fun KeyLayer(
 		val keyWidth = (size.width - (layer.getWidth() + 1) * keySpacing.value) / layer.getWidth()
 		val keyHeight =
 			(size.height - (layer.getHeight() + 1) * keySpacing.value) / layer.getHeight()
-
+		
 		// Draw the layer
 		for (j in 0 until layer.getHeight())
 			for (i in 0 until layer.getWidth()) {
 				val kc = layer.getKc(j, i)
-
+				
 				// Calculate the position of the key considering the spacing and the layer size
 				val x = i * keyWidth + (i + 1) * keySpacing.value
 				val y = j * keyHeight + (j + 1) * keySpacing.value
-
+				
 				key(
 					kc,
 					pressedKeys.getOrDefault(kc, 0),
@@ -337,14 +350,14 @@ private fun KeyLayer(
 					Size(width = keyWidth, height = keyHeight)
 				)
 			}
-
+		
 		// Draw the color palette in the middle vertically
 		palette(
 			size.width * 0.5f,
 			size.height * 0.5f,
 			Size(width = size.width * 0.04f, height = size.height - keySpacing.value * 2),
 		)
-
+		
 		// Display the number of times the hovered key was pressed
 		hoveredKey.value?.let {
 			// Calculate the size of the text
@@ -354,21 +367,21 @@ private fun KeyLayer(
 			}%"
 			val textSize = textMeasurer.measure(text).size
 			val percentageTextSize = textMeasurer.measure(percentageText).size
-
+			
 			// Calculate the position of the bottom left key
 			val bottomLeftKeyX = 0 * keyWidth + (0 + 1) * keySpacing.value
 			val bottomLeftKeyY =
 				(layer.getHeight() - 1) * keyHeight + (layer.getHeight()) * keySpacing.value
-
+			
 			// Calculate the x and y coordinates for the text
 			val textX = bottomLeftKeyX + keyWidth / 2 - textSize.width / 2
 			val textY = bottomLeftKeyY + keyHeight / 2 - textSize.height / 2
-
+			
 			// Calculate the x and y coordinates for the percentage text
 			val percentageTextX =
 				(bottomLeftKeyX + keyWidth) + keyWidth / 2 - percentageTextSize.width / 2
 			val percentageTextY = bottomLeftKeyY + keyHeight / 2 - percentageTextSize.height / 2
-
+			
 			drawText(
 				text = text,
 				textMeasurer = textMeasurer,
@@ -380,7 +393,7 @@ private fun KeyLayer(
 				// Draw the text at the center of the bottom left key
 				topLeft = Offset(x = textX, y = textY)
 			)
-
+			
 			drawText(
 				text = percentageText,
 				textMeasurer = textMeasurer,
@@ -411,18 +424,18 @@ private fun DrawScope.key(
 	if (kc == KC.UNKNOWN) return
 
 //	val size = Size(width = layerSize.width * 0.08f, height = layerSize.height * 0.2f)
-
+	
 	val keyRect = Rect(
 		left = x,
 		top = y,
 		right = x + keySize.width,
 		bottom = y + keySize.height
 	)
-
+	
 	// Check if the mouse is hovering over the key
 	if (keyRect.contains(mousePosition.value))
 		hoveredKey.value = kc
-
+	
 	translate(
 		left = x,
 		top = y
@@ -438,14 +451,14 @@ private fun DrawScope.key(
 			),
 			cornerRadius = CornerRadius(x = 10f, y = 10f)
 		)
-
+		
 		// Calculate the offset based on the size of the key and the text
 		val textSize = textMeasurer.measure(kc.unicode).size
 		val offset = Offset(
 			x = (keySize.width - textSize.width) / 2,
 			y = (keySize.height - textSize.height) / 2
 		)
-
+		
 		// Draw the key text on the key
 		// centered horizontally and vertically
 		drawText(
@@ -485,15 +498,15 @@ fun interpolateColor(value: Float): Color {
 		Color.White,
 		Color.Red,
 	)
-
+	
 	val clampedValue = value.coerceIn(0f, 1f)
-
+	
 	if (clampedValue <= 0f) return palette.first()
 	if (clampedValue >= 1f) return palette.last()
-
+	
 	val scaledValue = clampedValue * (palette.size - 1)
 	val index = scaledValue.toInt()
 	val fraction = scaledValue - index
-
+	
 	return lerp(palette[index], palette[index + 1], fraction)
 }
