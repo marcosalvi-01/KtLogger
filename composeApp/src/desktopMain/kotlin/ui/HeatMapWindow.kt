@@ -1,18 +1,53 @@
 package ui
 
 import DropdownMenuNoPaddingVeitical
-import androidx.compose.foundation.*
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.VerticalScrollbar
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.rememberScrollbarAdapter
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.window.WindowDraggableArea
-import androidx.compose.material.*
+import androidx.compose.material.AlertDialog
+import androidx.compose.material.Button
+import androidx.compose.material.ButtonDefaults
+import androidx.compose.material.Card
+import androidx.compose.material.Divider
+import androidx.compose.material.DropdownMenuItem
+import androidx.compose.material.Icon
+import androidx.compose.material.IconButton
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Surface
+import androidx.compose.material.Text
+import androidx.compose.material.TextButton
+import androidx.compose.material.TextField
+import androidx.compose.material.TextFieldDefaults
+import androidx.compose.material.TopAppBar
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.rounded.Close
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
@@ -28,17 +63,24 @@ import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.onPointerEvent
-import androidx.compose.ui.text.*
+import androidx.compose.ui.text.ExperimentalTextApi
+import androidx.compose.ui.text.TextMeasurer
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowState
 import database.Database
 import icon
-import keyboard.*
+import keyboard.KC
+import keyboard.KeyLayer
+import keyboard.Keymap
 
 @Composable
 fun HeatmapWindow(
@@ -65,6 +107,7 @@ fun HeatmapWindow(
 			shape = RoundedCornerShape(10.dp)
 		) {
 			val areYouSureDialogState = remember { mutableStateOf<AreYouSureDialog?>(null) }
+			val newKeymapDialogState = remember { mutableStateOf<NewKeymapDialog?>(null) }
 			
 			println(areYouSureDialogState.value)
 			
@@ -84,11 +127,16 @@ fun HeatmapWindow(
 							}
 						)
 					}
-					HeatmapBody(pressedKeys, areYouSureDialogState)
+					HeatmapBody(pressedKeys, areYouSureDialogState, newKeymapDialogState)
 				}
 				// Show a dialog to delete the layer
 				areYouSureDialogState.value?.let {
 					AreYouSureDialog(it)
+				}
+				
+				// Show a dialog to create a new keymap
+				newKeymapDialogState.value?.let {
+					NewKeymapDialog(it)
 				}
 			}
 		}
@@ -99,6 +147,7 @@ fun HeatmapWindow(
 fun HeatmapBody(
 	pressedKeys: Map<KC, Int>,
 	areYouSureDialogState: MutableState<AreYouSureDialog?>,
+	newKeymapDialogState: MutableState<NewKeymapDialog?>,
 ) {
 	val scrollState = rememberScrollState()
 	var keymaps by remember { mutableStateOf(Database.getKeymaps()) }
@@ -134,11 +183,12 @@ fun HeatmapBody(
 								selectedKeymap.value = keymaps.firstOrNull()
 						},
 						onNewKeymapCreated = {
-							Database.createKeymap(defaultKeymap.copy(name = "New keymap"))
+							Database.createKeymap(it)
 							keymaps = Database.getKeymaps()
-							selectedKeymap.value = keymaps.firstOrNull()
+							selectedKeymap.value = it
 						},
-						areYouSureDialogState = areYouSureDialogState
+						areYouSureDialogState = areYouSureDialogState,
+						newKeymapDialogState = newKeymapDialogState
 					)
 				}
 			}
@@ -162,8 +212,9 @@ fun KeymapSelector(
 	keymaps: List<Keymap>,
 	onKeymapSelected: (Keymap) -> Unit,
 	onKeymapDeleted: (Keymap) -> Unit,
-	onNewKeymapCreated: () -> Unit,
+	onNewKeymapCreated: (Keymap) -> Unit,
 	areYouSureDialogState: MutableState<AreYouSureDialog?>,
+	newKeymapDialogState: MutableState<NewKeymapDialog?>,
 ) {
 	var showKeymapsDropdown by remember { mutableStateOf(false) }
 	Button(
@@ -241,7 +292,13 @@ fun KeymapSelector(
 		Divider(color = MaterialTheme.colors.onSurface.copy(alpha = 0.2f), thickness = 1.dp)
 		DropdownMenuItem(
 			onClick = {
-				onNewKeymapCreated()
+				newKeymapDialogState.value = NewKeymapDialog(
+					onNewKeymapCreated = {
+						onNewKeymapCreated(Keymap(it, emptyList()))
+					},
+					onDismiss = { newKeymapDialogState.value = null },
+					keymapNames = keymaps.map { it.name }
+				)
 				showKeymapsDropdown = false
 			}
 		) {
@@ -637,4 +694,86 @@ data class AreYouSureDialog(
 	val dismissButtonText: String = "No",
 	var onYes: () -> Unit,
 	var onNo: () -> Unit,
+)
+
+@Composable
+fun NewKeymapDialog(state: NewKeymapDialog) {
+	Dialog(
+		onDismissRequest = {
+			state.onDismiss()
+		},
+	) {
+		Card {
+			Column(
+				modifier = Modifier.padding(16.dp),
+			) {
+				Text(
+					text = "Create a new keymap",
+					style = MaterialTheme.typography.h6,
+					fontWeight = FontWeight.Bold
+				)
+				
+				var title by remember { mutableStateOf("") }
+				
+				TextField(
+					value = title,
+					onValueChange = {
+						title = it
+					},
+					label = { Text("Name") },
+					modifier = Modifier.fillMaxWidth().padding(top = 10.dp, bottom = 15.dp),
+					colors = TextFieldDefaults.textFieldColors(
+						backgroundColor = MaterialTheme.colors.surface
+					)
+				)
+				
+				Row(
+					modifier = Modifier.fillMaxWidth(),
+					horizontalArrangement = Arrangement.Center,
+				) {
+					// Show a button to save the changes
+					Button(
+						onClick = {
+							// Create the new keymap
+							state.onNewKeymapCreated(title)
+							
+							// Close the dialog
+							state.onDismiss()
+						},
+						enabled = title.isNotBlank() && title !in state.keymapNames
+					) {
+						Text("Create")
+					}
+					
+					Spacer(modifier = Modifier.width(16.dp))
+					
+					// Show a button to cancel the changes
+					Button(
+						onClick = {
+							// Close the dialog
+							state.onDismiss()
+						}
+					) {
+						Text("Cancel")
+					}
+				}
+				
+				// Warning text if the keymap name already exists
+				if (title in state.keymapNames) {
+					Text(
+						text = "A keymap with this name already exists",
+						color = MaterialTheme.colors.error,
+						modifier = Modifier.padding(top = 10.dp)
+					)
+				}
+			}
+		}
+	}
+}
+
+
+data class NewKeymapDialog(
+	val keymapNames: List<String>,
+	val onNewKeymapCreated: (String) -> Unit,
+	val onDismiss: () -> Unit,
 )

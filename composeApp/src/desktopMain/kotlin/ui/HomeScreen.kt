@@ -45,7 +45,6 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -62,7 +61,7 @@ import kotlin.time.Duration
 class HomeScreen : Screen {
 	val timeTotal = Database.getFocusTime()
 	private val selected = mutableStateOf(Database.getSelectedWindows())
-
+	
 	@Composable
 	override fun Content() {
 		Home(selected)
@@ -73,21 +72,21 @@ class HomeScreen : Screen {
 @Composable
 private fun Home(selected: MutableState<List<String>>) {
 	val showEditDialog = remember { mutableStateOf<Pair<String, String>?>(null) }
-
+	
 	// Get the data from the database and sort it by duration (<<windowId, windowName>, focusTime>)
 	val windows =
 		Database.windows.collectAsState(Database.loadWindows()).value.entries.sortedByDescending { it.value }
 			.associateBy({ it.key }, { it.value })  // Preserves the order
-
+	
 	val navigator = LocalNavigator.currentOrThrow
-
+	
 	Column(
 		horizontalAlignment = Alignment.CenterHorizontally,
 		modifier = Modifier.fillMaxSize()
 	) {
-
+		
 		val scrollState = rememberScrollState()
-
+		
 		Box(Modifier.fillMaxSize()) {
 			FlowRow(Modifier.fillMaxSize().verticalScroll(scrollState)) {
 				Row(Modifier.fillMaxWidth()) {
@@ -114,9 +113,9 @@ private fun Home(selected: MutableState<List<String>>) {
 						) {
 							Text("Totals")
 						}
-
+						
 						Spacer(Modifier.width(8.dp))
-
+						
 						Button(
 							onClick = {
 								// Go to the window info screen
@@ -136,11 +135,11 @@ private fun Home(selected: MutableState<List<String>>) {
 						) {
 							Text("Selected")
 						}
-
+						
 					}
-
+					
 					Spacer(Modifier.weight(1f))
-
+					
 					Row(
 						horizontalArrangement = Arrangement.End,
 					) {
@@ -154,7 +153,7 @@ private fun Home(selected: MutableState<List<String>>) {
 							Text("Deselect all")
 						}
 					}
-
+					
 					Spacer(Modifier.width(16.dp))
 				}
 				// Display the data
@@ -168,14 +167,14 @@ private fun Home(selected: MutableState<List<String>>) {
 					)
 				}
 			}
-
+			
 			VerticalScrollbar(
 				modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
 				adapter = rememberScrollbarAdapter(scrollState)
 			)
 		}
 	}
-
+	
 	// Show the dialog to edit the title
 	if (showEditDialog.value != null) {
 		EditTitleDialog(showEditDialog)
@@ -221,7 +220,7 @@ private fun HomeCard(
 				text = windowName,
 				modifier = Modifier.align(Alignment.TopStart).padding(16.dp)
 			)
-
+			
 			// Buttons at the top right
 			Box(modifier = Modifier.align(Alignment.TopEnd)) {
 				// Button at the top right
@@ -236,7 +235,7 @@ private fun HomeCard(
 						contentDescription = "More options",
 					)
 				}
-
+				
 				// DropdownMenu remains the same
 				DropdownMenu(
 					expanded = contextMenuExpanded,
@@ -262,13 +261,13 @@ private fun HomeCard(
 					}
 				}
 			}
-
+			
 			// Time at the bottom left
 			Text(
 				text = focusTime.format(),
 				modifier = Modifier.align(Alignment.BottomStart).padding(16.dp)
 			)
-
+			
 			// Checkbox at the bottom right
 			Checkbox(
 				checked = selected.value.contains(windowId),
@@ -294,9 +293,9 @@ private fun EditTitleDialog(
 ) {
 	// Just to be sure
 	if (showEditDialog.value == null) return
-
+	
 	var title by remember { mutableStateOf(showEditDialog.value!!.second) }
-
+	
 	Dialog(
 		onDismissRequest = {
 			// Close the dialog
@@ -311,10 +310,8 @@ private fun EditTitleDialog(
 				Text(
 					text = "Edit title",
 					modifier = Modifier.padding(8.dp),
-					style = TextStyle(
-						fontWeight = FontWeight.Bold,
-						fontSize = MaterialTheme.typography.h6.fontSize
-					)
+					style = MaterialTheme.typography.h6,
+					fontWeight = FontWeight.Bold,
 				)
 				TextField(
 					value = title,
@@ -331,7 +328,7 @@ private fun EditTitleDialog(
 						cursorColor = MaterialTheme.colors.onSurface,
 					),
 				)
-
+				
 				Row(
 					modifier = Modifier.fillMaxWidth(),
 					horizontalArrangement = Arrangement.Center,
@@ -344,9 +341,9 @@ private fun EditTitleDialog(
 					) {
 						Text("Save")
 					}
-
+					
 					Spacer(modifier = Modifier.width(8.dp))
-
+					
 					// Show a button to cancel the changes
 					Button(
 						onClick = {
