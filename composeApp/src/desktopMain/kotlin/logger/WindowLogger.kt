@@ -39,7 +39,6 @@ object WindowLogger {
 						_activeWindows.emit(Window(windowName))
 					}
 					delay(500)
-					throw IllegalStateException("WindowLogger stopped")
 				}
 			} catch (e: Exception) {
 				stop()

@@ -1,4 +1,6 @@
 import androidx.compose.material.MaterialTheme
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.painter.Painter
@@ -69,6 +71,17 @@ fun main() {
 					Item("Exit") {
 						// Close the app
 						exitApplication()
+					}
+					
+					val isRunning by SystemLogger.isRunning.collectAsState()
+					Item(
+						if (isRunning) "Stop Logger" else "Start Logger"
+					) {
+						// Start or stop the logger
+						if (isRunning)
+							SystemLogger.stop()
+						else
+							SystemLogger.start()
 					}
 				},
 				onAction = {

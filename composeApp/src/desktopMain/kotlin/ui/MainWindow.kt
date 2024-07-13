@@ -4,6 +4,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.TooltipArea
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -99,7 +100,12 @@ fun MainWindow(
 											isRunning,
 											"Logger is running",
 											"Logger is not running"
-										)
+										) {
+											if (isRunning)
+												SystemLogger.stop()
+											else
+												SystemLogger.start()
+										}
 										
 										// Refresh the data
 										IconButton(
@@ -162,7 +168,12 @@ private fun navigationIcon(navigator: Navigator): (@Composable () -> Unit)? {
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun ColorChangingDot(condition: Boolean, tooltipPositive: String, tooltipNegative: String) {
+fun ColorChangingDot(
+	condition: Boolean,
+	tooltipPositive: String,
+	tooltipNegative: String,
+	onClick: () -> Unit = {},
+) {
 	val dotColor = if (condition) Color.Green else Color.Red
 	TooltipArea(
 		tooltip = {
@@ -179,7 +190,9 @@ fun ColorChangingDot(condition: Boolean, tooltipPositive: String, tooltipNegativ
 		},
 		delayMillis = 250
 	) {
-		Canvas(modifier = Modifier.size(10.dp)) {
+		Canvas(
+			modifier = Modifier.size(10.dp).clickable(onClick = onClick)
+		) {
 			drawCircle(color = dotColor)
 		}
 	}
