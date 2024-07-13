@@ -2,41 +2,48 @@ package logger
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 object SystemLogger {
 	val data: MutableList<WindowInfo> = mutableListOf()
 	private var activeWindow: WindowInfo? = null
-	var isRunning = false
-		private set
-
-	private val scope = CoroutineScope(Dispatchers.Default)
-
+	
+	lateinit var isRunning: StateFlow<Boolean>
+	val scope = CoroutineScope(Dispatchers.IO)
+	
 	fun start() {
-		if (isRunning) return
-		isRunning = true
 		// The loggers are all started in coroutines
 		KeyboardLogger.start()
 		MouseLogger.start()
 		WindowLogger.start()
-
+		
 		// Start elaborating the data and emitting it
 		elaborateData()
+		
+		// Connect the isRunning of each logger to the isRunning of the SystemLogger
+		scope.launch {
+			isRunning = combine(
+				KeyboardLogger.isRunning,
+				MouseLogger.isRunning,
+				WindowLogger.isRunning
+			) { k, m, w -> k && m && w }.stateIn(CoroutineScope(Dispatchers.Default))
+		}
 	}
-
+	
 	fun stop() {
-		if (!isRunning) return
-		isRunning = false
 		KeyboardLogger.stop()
 		MouseLogger.stop()
 		WindowLogger.stop()
 	}
-
+	
 	fun saveData() {
 		// Save the data to the database
 		data.forEach { it.save() }
 	}
-
+	
 	private fun elaborateData() {
 		// Increase the key press count of the key in the active window
 		scope.launch {
@@ -77,15 +84,15 @@ object SystemLogger {
 			}
 		}
 	}
-
+	
 	fun getWindowInfo(windowName: String): WindowInfo? {
 		return data.find { it.id == windowName }
 	}
-
+	
 	private fun windowFocused(newActiveWindow: WindowInfo) {
 		// Check if the window is already the active window
 		if (newActiveWindow == activeWindow) return
-
+		
 		// Focus the new window
 		newActiveWindow.windowFocused()
 		// Unfocus the previous window

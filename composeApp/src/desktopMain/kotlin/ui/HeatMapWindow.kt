@@ -117,6 +117,11 @@ fun HeatmapBody(pressedKeys: Map<KC, Int>) {
 				)
 			}
 
+			Divider(
+				color = MaterialTheme.colors.onSurface.copy(alpha = 0.1f),
+				modifier = Modifier.padding(start = 15.dp)
+			)
+
 			KeyboardCanvas(selectedKeymap, pressedKeys)
 		}
 		VerticalScrollbar(
@@ -176,7 +181,7 @@ fun KeymapSelector(
 				IconButton(
 					onClick = {
 						showKeymapsDropdown = false
-						// TODO: Implement edit functionality
+						TODO()
 					},
 					modifier = Modifier.size(32.dp)
 				) {
@@ -250,13 +255,19 @@ private fun KeyboardCanvas(
 					MaterialTheme.colors.onBackground,
 					textMeasurer
 				)
+
+				Divider(
+					color = MaterialTheme.colors.onSurface.copy(alpha = 0.1f),
+					modifier = Modifier.padding(start = 15.dp)
+				)
 			}
 
 			Box(
 				modifier = Modifier
 					.align(Alignment.CenterHorizontally)
 					.background(color = MaterialTheme.colors.primary, shape = CircleShape)
-					.size(48.dp), // Adjust size to control the overall size of the circle
+					.size(48.dp)
+					.padding(top = 10.dp),
 				contentAlignment = Alignment.Center
 			) {
 				IconButton(

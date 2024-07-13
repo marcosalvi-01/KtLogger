@@ -1,10 +1,16 @@
 package ui
 
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.TooltipArea
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.window.WindowDraggableArea
 import androidx.compose.material.Icon
@@ -16,19 +22,26 @@ import androidx.compose.material.Text
 import androidx.compose.material.TopAppBar
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowState
 import cafe.adriel.voyager.navigator.CurrentScreen
 import cafe.adriel.voyager.navigator.Navigator
+import database.Database
 import icon
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import logger.SystemLogger
 import logger.format
 
 @Composable
@@ -79,6 +92,33 @@ fun MainWindow(
 									},
 									navigationIcon = navigationIcon(it),
 									actions = {
+										Spacer(modifier = Modifier.padding(15.dp))
+										// Icon to show if the logger is running
+										val isRunning by SystemLogger.isRunning.collectAsState()
+										ColorChangingDot(
+											isRunning,
+											"Logger is running",
+											"Logger is not running"
+										)
+										
+										// Refresh the data
+										IconButton(
+											onClick = {
+												// Refresh the data
+												CoroutineScope(Dispatchers.Default).launch {
+													SystemLogger.saveData()
+													Database.loadData()
+												}
+											},
+											modifier = Modifier.padding(start = 10.dp)
+										) {
+											Icon(
+												Icons.Filled.Refresh,
+												contentDescription = "Refresh",
+												tint = MaterialTheme.colors.onBackground
+											)
+										}
+										
 										// Close the window
 										IconButton(onClick = {
 											isMainWindowOpen.value = false
@@ -118,4 +158,29 @@ private fun navigationIcon(navigator: Navigator): (@Composable () -> Unit)? {
 		}
 	}
 	return null
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun ColorChangingDot(condition: Boolean, tooltipPositive: String, tooltipNegative: String) {
+	val dotColor = if (condition) Color.Green else Color.Red
+	TooltipArea(
+		tooltip = {
+			Box(
+				modifier = Modifier
+					.background(
+						MaterialTheme.colors.surface,
+						shape = RoundedCornerShape(10.dp)
+					)
+					.padding(10.dp),
+			) {
+				Text(if (condition) tooltipPositive else tooltipNegative)
+			}
+		},
+		delayMillis = 250
+	) {
+		Canvas(modifier = Modifier.size(10.dp)) {
+			drawCircle(color = dotColor)
+		}
+	}
 }

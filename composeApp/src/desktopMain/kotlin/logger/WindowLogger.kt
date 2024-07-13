@@ -9,6 +9,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 
@@ -18,33 +20,39 @@ object WindowLogger {
 	// The flow of the active windows
 	private val _activeWindows = MutableSharedFlow<Window>()
 	val activeWindows = _activeWindows.asSharedFlow()
-
+	
 	var activeWindow = ""
-
+	
 	// Stuff used for the hook
-	var isRunning = false
-		private set
-
+	private val _isRunning = MutableStateFlow(false)
+	val isRunning = _isRunning as StateFlow<Boolean>
+	
 	fun start() {
-		if (isRunning) return
-		isRunning = true
+		if (_isRunning.value) return
+		_isRunning.value = true
 		CoroutineScope(Dispatchers.IO).launch {
-			while (isRunning) {
-				val windowName = getForegroundWindowName()
-				if (windowName.isNotEmpty() && windowName != activeWindow) {
-					activeWindow = windowName
-					_activeWindows.emit(Window(windowName))
+			try {
+				while (_isRunning.value) {
+					val windowName = getForegroundWindowName()
+					if (windowName.isNotEmpty() && windowName != activeWindow) {
+						activeWindow = windowName
+						_activeWindows.emit(Window(windowName))
+					}
+					delay(500)
+					throw IllegalStateException("WindowLogger stopped")
 				}
-				delay(500)
+			} catch (e: Exception) {
+				stop()
+				throw e
 			}
 		}
 	}
-
+	
 	fun stop() {
-		if (!isRunning) return
-		isRunning = false
+		if (!_isRunning.value) return
+		_isRunning.value = false
 	}
-
+	
 	private fun getForegroundWindowName(): String {
 		val processId = IntByReference()
 		User32.INSTANCE.GetWindowThreadProcessId(User32.INSTANCE.GetForegroundWindow(), processId)

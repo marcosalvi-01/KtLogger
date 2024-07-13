@@ -10,6 +10,8 @@ import keyboard.Key
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 
@@ -17,16 +19,16 @@ object KeyboardLogger {
 	// The flow of the key presses
 	private val _keyPresses = MutableSharedFlow<KC>()
 	val keyPresses = _keyPresses.asSharedFlow()
-
+	
 	// Stuff used for the hook
 	private val user32 = User32.INSTANCE
 	private var hhk: WinUser.HHOOK? = null
 	private val hMod: WinDef.HMODULE = Kernel32.INSTANCE.GetModuleHandle(null)
-	var isRunning = false
-		private set
-
+	private val _isRunning = MutableStateFlow(false)
+	val isRunning = _isRunning as StateFlow<Boolean>
+	
 	private val scope = CoroutineScope(Dispatchers.IO)
-
+	
 	private val hook = WinUser.LowLevelKeyboardProc { nCode, wParam, info ->
 		if (nCode >= 0) {
 			when (wParam.toInt()) {
@@ -46,33 +48,38 @@ object KeyboardLogger {
 			WinDef.LPARAM(Pointer.nativeValue(info.pointer))
 		)
 	}
-
+	
 	fun start() {
-		if (isRunning) return
-		isRunning = true
+		if (_isRunning.value) return
+		_isRunning.value = true
 		scope.launch {
-			hhk = user32.SetWindowsHookEx(WinUser.WH_KEYBOARD_LL, hook, hMod, 0)
-			val msg = WinUser.MSG()
-			while (user32.GetMessage(msg, null, 0, 0) != 0) {
-				user32.TranslateMessage(msg)
-				user32.DispatchMessage(msg)
+			try {
+				hhk = user32.SetWindowsHookEx(WinUser.WH_KEYBOARD_LL, hook, hMod, 0)
+				val msg = WinUser.MSG()
+				while (user32.GetMessage(msg, null, 0, 0) != 0) {
+					user32.TranslateMessage(msg)
+					user32.DispatchMessage(msg)
+				}
+			} catch (e: Exception) {
+				stop()
+				throw e
 			}
 		}
 	}
-
+	
 	fun stop() {
-		if (!isRunning) return
-		isRunning = false
+		if (!_isRunning.value) return
+		_isRunning.value = false
 		if (hhk != null) {
 			user32.UnhookWindowsHookEx(hhk)
 			hhk = null
 		}
 	}
-
+	
 	fun isShiftDown(): Boolean {
 		return User32.INSTANCE.GetAsyncKeyState(WinUser.VK_SHIFT).toInt() and 0x8000 != 0
 	}
-
+	
 	fun isAltGrDown(): Boolean {
 		return User32.INSTANCE.GetAsyncKeyState(WinUser.VK_MENU).toInt() and 0x8000 != 0
 	}

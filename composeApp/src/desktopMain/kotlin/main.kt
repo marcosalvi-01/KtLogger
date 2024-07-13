@@ -14,6 +14,10 @@ import logger.SystemLogger
 import ui.MainWindow
 import ui.matteBlueTheme
 import java.awt.*
+import java.io.File
+import java.io.IOException
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 
@@ -33,38 +37,34 @@ fun main() {
 			setSize(300, 300)
 			isVisible = true
 		}
+		
+		// Save the error log to a file
+		logExceptionToFile(e)
 	}
-
+	
 	// Initialize the db
 	Database.connect()
 	// Start the logger
 	SystemLogger.start()
 	// Start the loop to save and load the data
 	loopSaveAndLoad()
-
+	
 	application {
 		// Remember the state of the main window, heatmap window
 		val isMainWindowOpen = remember { mutableStateOf(true) }
-
+		
 		// Get the icon
 		icon = painterResource("app_icon.png")
-
+		
 		MaterialTheme(
 			colors = matteBlueTheme,
 		) {
 			// The main window
 			MainWindow(isMainWindowOpen)
-
+			
 			Tray(
 				icon = icon,
 				menu = {
-					// Pause/resume logging
-					Item(if (SystemLogger.isRunning) "Pause logging" else "Resume logging") {
-						if (SystemLogger.isRunning)
-							SystemLogger.stop()
-						else
-							SystemLogger.start()
-					}
 					// Add key presses from file
 					Item("Exit") {
 						// Close the app
@@ -93,5 +93,24 @@ private fun loopSaveAndLoad() {
 			// Reload the windows
 			Database.loadData()
 		}
+	}
+}
+
+fun logExceptionToFile(e: Throwable) {
+	val logFile = File("error.log")
+	try {
+		// Ensure the log file exists
+		if (!logFile.exists()) {
+			logFile.createNewFile()
+		}
+		// Format the current timestamp and exception details
+		val currentDateTime =
+			LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+		val logMessage = "$currentDateTime - ${e.message}\n${e.stackTraceToString()}\n\n"
+		
+		// Append the formatted exception information to the log file
+		logFile.appendText(logMessage)
+	} catch (ioException: IOException) {
+		ioException.printStackTrace()
 	}
 }
