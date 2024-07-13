@@ -104,7 +104,7 @@ fun BigramsWindow(
 							KeyRowItem(
 								listOf(
 									KeyColumnItem(
-										bigram.first.symbol + " " + bigram.second.symbol,
+										bigram.first.unicode + " " + bigram.second.unicode,
 										0.5f
 									),
 									KeyColumnItem(value.toString(), 0.5f),

@@ -76,7 +76,7 @@ private fun WindowInfo(
 					data = keyPresses.entries.sortedByDescending { it.value }.map { (key, value) ->
 						KeyRowItem(
 							listOf(
-								KeyColumnItem(key.symbol, 0.5f),
+								KeyColumnItem(key.unicode, 0.5f),
 								KeyColumnItem(value.toString(), 0.5f),
 								KeyColumnItem(
 									"${

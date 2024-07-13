@@ -3,6 +3,7 @@ package keyboard
 
 enum class KC(
 	val symbol: String,
+	val unicode: String = symbol,
 ) {
 	// -------- LETTERS --------
 	A("A"),
@@ -73,37 +74,37 @@ enum class KC(
 
 
 	// -------- UTILITIES --------
-	SPACE("Space"),
-	ENTER("Enter"),
-	TAB("Tab"),
-	BACKSPACE("Backspace"),
-	ESCAPE("Escape"),
-	DELETE("Delete"),
-	INSERT("Insert"),
+	SPACE("Space", "␣"),
+	ENTER("Enter", "↩"),
+	TAB("Tab", "↹"),
+	BACKSPACE("Backspace", "⌫"),
+	ESCAPE("Escape", "⎋"),
+	DELETE("Delete", "⌦"),
+	INSERT("Insert", "⎀"),
 
 	// -------- NAVIGATION --------
-	HOME("Home"),
-	END("End"),
-	PAGE_UP("Page Up"),
-	PAGE_DOWN("Page Down"),
-	UP("Up"),
-	DOWN("Down"),
-	LEFT("Left"),
-	RIGHT("Right"),
+	HOME("Home", "⇤"),
+	END("End", "⇥"),
+	PAGE_UP("Page Up", "▲"),
+	PAGE_DOWN("Page Down", "▼"),
+	UP("Up", "↑"),
+	DOWN("Down", "↓"),
+	LEFT("Left", "←"),
+	RIGHT("Right", "→"),
 
 	// -------- MEDIA KEYS --------
-	PAUSE_PLAY("Pause"),
-	NEXT_TRACK("Next Track"),
-	PREVIOUS_TRACK("Previous Track"),
+	PAUSE_PLAY("Pause/Play", "⏯"),
+	NEXT_TRACK("Next Track", "⏭"),
+	PREVIOUS_TRACK("Previous Track", "⏮"),
 	MUTE("Mute"),
-	VOLUME_UP("Volume Up"),
-	VOLUME_DOWN("Volume Down"),
+	VOLUME_UP("Volume Up", "🔊"),
+	VOLUME_DOWN("Volume Down", "🔉"),
 
 	// -------- LOCK MODIFIERS --------
-	CAPS_LOCK("Caps Lock"),
-	NUM_LOCK("Num Lock"),
-	SCROLL_LOCK("Scroll Lock"),
-	PRINT_SCREEN("Print Screen"),
+	CAPS_LOCK("Caps Lock", "⇪"),
+	NUM_LOCK("Num Lock", "⇭"),
+	SCROLL_LOCK("Scroll Lock", "⇳"),
+	PRINT_SCREEN("Print Screen", "⎙"),
 
 	// -------- FUNCTION KEYS --------
 	F1("F1"),
@@ -132,26 +133,26 @@ enum class KC(
 	ZERO("0"),
 
 	// -------- NUMPAD --------
-	NUMPAD_0("Numpad 0"),
-	NUMPAD_1("Numpad 1"),
-	NUMPAD_2("Numpad 2"),
-	NUMPAD_3("Numpad 3"),
-	NUMPAD_4("Numpad 4"),
-	NUMPAD_5("Numpad 5"),
-	NUMPAD_6("Numpad 6"),
-	NUMPAD_7("Numpad 7"),
-	NUMPAD_8("Numpad 8"),
-	NUMPAD_9("Numpad 9"),
+	NUMPAD_0("Numpad 0", "N0"),
+	NUMPAD_1("Numpad 1", "N1"),
+	NUMPAD_2("Numpad 2", "N2"),
+	NUMPAD_3("Numpad 3", "N3"),
+	NUMPAD_4("Numpad 4", "N4"),
+	NUMPAD_5("Numpad 5", "N5"),
+	NUMPAD_6("Numpad 6", "N6"),
+	NUMPAD_7("Numpad 7", "N7"),
+	NUMPAD_8("Numpad 8", "N8"),
+	NUMPAD_9("Numpad 9", "N9"),
 
 	// -------- MODIFIERS --------
-	SHIFT_LEFT("Shift"),
-	SHIFT_RIGHT("Shift"),
-	CTRL_LEFT("Control"),
-	CTRL_RIGHT("Control"),
-	ALT_LEFT("Alt"),
-	ALT_RIGHT("Alt"),
-	WIN_LEFT("Windows"),
-	WIN_RIGHT("Windows"),
+	SHIFT_LEFT("Shift", "⇧"),
+	SHIFT_RIGHT("Shift", "⇧"),
+	CTRL_LEFT("Control", "⌃"),
+	CTRL_RIGHT("Control", "⌃"),
+	ALT_LEFT("Alt", "⌥"),
+	ALT_RIGHT("Alt", "⌥"),
+	GUI_LEFT("Windows", "⌘"),
+	GUI_RIGHT("Windows", "⌘"),
 
 	// -------- GRAVED LETTERS --------
 	A_GRAVE("à"),
@@ -177,8 +178,8 @@ enum class KC(
 			CTRL_RIGHT,
 			ALT_LEFT,
 			ALT_RIGHT,
-			WIN_LEFT,
-			WIN_RIGHT
+			GUI_LEFT,
+			GUI_RIGHT
 		)
 	}
 

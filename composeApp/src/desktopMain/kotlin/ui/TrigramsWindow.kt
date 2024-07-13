@@ -108,7 +108,7 @@ fun TrigramsWindow(
 							KeyRowItem(
 								listOf(
 									KeyColumnItem(
-										trigram.first.symbol + " " + trigram.second.symbol + " " + trigram.third.symbol,
+										trigram.first.unicode + " " + trigram.second.unicode + " " + trigram.third.unicode,
 										0.5f
 									),
 									KeyColumnItem(value.toString(), 0.5f),

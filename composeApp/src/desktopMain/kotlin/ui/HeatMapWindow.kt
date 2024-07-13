@@ -96,10 +96,10 @@ fun HeatmapBody(pressedKeys: Map<KC, Int>) {
 			modifier = Modifier
 				.fillMaxSize()
 				.verticalScroll(scrollState)
-				.padding(top = 10.dp, bottom = 15.dp)
+				.padding(top = 10.dp, bottom = 15.dp, end = 15.dp)
 		) {
 			Box(
-				modifier = Modifier.align(Alignment.CenterHorizontally)
+				modifier = Modifier.align(Alignment.End).padding(end = 15.dp)
 			) {
 				KeymapSelector(
 					keymaps = keymaps,
@@ -429,7 +429,7 @@ private fun DrawScope.key(
 		)
 
 		// Calculate the offset based on the size of the key and the text
-		val textSize = textMeasurer.measure(kc.symbol).size
+		val textSize = textMeasurer.measure(kc.unicode).size
 		val offset = Offset(
 			x = (keySize.width - textSize.width) / 2,
 			y = (keySize.height - textSize.height) / 2
@@ -439,7 +439,7 @@ private fun DrawScope.key(
 		// centered horizontally and vertically
 		drawText(
 			textMeasurer = textMeasurer,
-			text = kc.symbol,
+			text = kc.unicode,
 			topLeft = offset,
 			style = TextStyle(
 				fontFamily = FontFamily("JetBrains Mono")
