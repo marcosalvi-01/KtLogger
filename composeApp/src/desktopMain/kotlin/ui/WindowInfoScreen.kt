@@ -38,7 +38,7 @@ data class WindowInfoScreen(
 	val scrollDirections: Map<ScrollDirection, Int>,
 	val mouseMovements: Map<Position, Int>,
 ) : Screen {
-
+	
 	@Composable
 	override fun Content() {
 		WindowInfo(
@@ -64,18 +64,18 @@ private fun WindowInfo(
 	focusTime: Duration,
 ) {
 	val keyPressesTotal = keyPresses.values.sum()
-
+	
 	val isHeatmapOpen = remember { mutableStateOf(false) }
 	val isMousePositionsOpen = remember { mutableStateOf(false) }
 	val isBigramsOpen = remember { mutableStateOf(false) }
 	val isTrigramsOpen = remember { mutableStateOf(false) }
-
+	
 	// The content of the main window
 	Column(
 		modifier = Modifier.fillMaxSize()
 	) {
 		TopButtons(isHeatmapOpen, isMousePositionsOpen, isBigramsOpen, isTrigramsOpen)
-
+		
 		Row {
 			Column(Modifier.fillMaxHeight().fillMaxWidth(0.5f)) {
 				Table(
@@ -170,7 +170,7 @@ private fun WindowInfo(
 						TableCell(text = column.getName(), weight = column.getWeight())
 					}
 				}
-
+				
 				// Show the totals
 				TotalsColumn(
 					keyPresses = keyPresses,
@@ -182,30 +182,49 @@ private fun WindowInfo(
 			}
 		}
 	}
-
+	
 	// The heatmap window
-	HeatmapWindow(
-		isHeatmapWindowOpen = isHeatmapOpen,
-		pressedKeys = keyPresses,
+	AppWindow(
+		isOpen = isHeatmapOpen,
+		title = "Heatmap",
+		content = {
+			HeatmapWindow(
+				pressedKeys = keyPresses,
+			)
+		}
 	)
-
+	
 	// The mouse positions window
-	MousePositionsWindow(
-		isMousePositionsOpen = isMousePositionsOpen,
-		mousePositions = mouseMovements
-	)
-
+	AppWindow(
+		isOpen = isMousePositionsOpen,
+		title = "Mouse Positions",
+		width = 1000.dp,
+		height = 400.dp
+	) {
+		MousePositionsWindow(mouseMovements)
+	}
+	
 	// The bigrams window
-	BigramsWindow(
-		isBigramsOpen = isBigramsOpen,
-		bigrams = bigrams
-	)
-
+	AppWindow(
+		isOpen = isBigramsOpen,
+		title = "Bigrams",
+		width = 550.dp,
+		height = 700.dp
+	) {
+		BigramsWindow(
+			bigrams = bigrams
+		)
+	}
+	
 	// The trigrams window
-	TrigramsWindow(
-		isTrigramsOpen = isTrigramsOpen,
-		trigrams = trigrams
-	)
+	AppWindow(
+		isOpen = isTrigramsOpen,
+		title = "Trigrams",
+		width = 650.dp,
+		height = 700.dp
+	) {
+		TrigramsWindow(trigrams)
+	}
 }
 
 @Composable
@@ -226,7 +245,7 @@ private fun TotalsColumn(
 			)
 		)
 	}
-
+	
 	Column(
 		modifier = Modifier.fillMaxHeight(),
 		verticalArrangement = Arrangement.Bottom
@@ -242,7 +261,7 @@ private fun TotalsColumn(
 private fun TotalsButtons(totals: MutableState<List<Total>>, focusTime: Duration) {
 	val totalTimeUnit = TimeUnit("Total", 1.0)
 	val selectedTimeUnit = remember { mutableStateOf(totalTimeUnit) }
-
+	
 	FlowRow(
 		modifier = Modifier.fillMaxWidth(),
 		horizontalArrangement = Arrangement.SpaceEvenly
@@ -253,14 +272,14 @@ private fun TotalsButtons(totals: MutableState<List<Total>>, focusTime: Duration
 			TimeUnit("Per Minute", focusTime.inWholeMinutes.toDouble()),
 			TimeUnit("Per Second", focusTime.inWholeSeconds.toDouble())
 		)
-
+		
 		timeUnits.forEach { timeUnit ->
 			Button(
 				onClick = {
 					totals.value = totals.value.map { total ->
 						total.copy(value = getFirstTwoNonZeroDecimalValues(total.initialValue / timeUnit.divisor))
 					}
-
+					
 					selectedTimeUnit.value = timeUnit
 				},
 				colors = if (selectedTimeUnit.value == timeUnit) {
@@ -317,7 +336,7 @@ private fun TopButtons(
 		) {
 			Text("Open heatmap")
 		}
-
+		
 		Button(
 			onClick = {
 				isMousePositionsWindowOpen.value = true
@@ -325,7 +344,7 @@ private fun TopButtons(
 		) {
 			Text("Open mouse positions")
 		}
-
+		
 		Button(
 			onClick = {
 				isBigramsOpen.value = true
@@ -333,7 +352,7 @@ private fun TopButtons(
 		) {
 			Text("Open bigrams")
 		}
-
+		
 		Button(
 			onClick = {
 				isTrigramsOpen.value = true

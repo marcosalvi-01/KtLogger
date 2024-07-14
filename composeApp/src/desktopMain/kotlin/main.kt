@@ -15,7 +15,11 @@ import kotlinx.coroutines.launch
 import logger.SystemLogger
 import ui.MainWindow
 import ui.matteBlueTheme
-import java.awt.*
+import java.awt.Button
+import java.awt.Dialog
+import java.awt.FlowLayout
+import java.awt.Frame
+import java.awt.Label
 import java.io.File
 import java.io.IOException
 import java.time.LocalDateTime

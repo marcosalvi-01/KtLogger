@@ -21,7 +21,6 @@ import androidx.compose.foundation.rememberScrollbarAdapter
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.window.WindowDraggableArea
 import androidx.compose.material.AlertDialog
 import androidx.compose.material.Button
 import androidx.compose.material.ButtonDefaults
@@ -30,15 +29,12 @@ import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.material.TextButton
-import androidx.compose.material.TopAppBar
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.rounded.Close
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
@@ -48,7 +44,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
@@ -70,10 +65,7 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Window
-import androidx.compose.ui.window.WindowState
 import database.Database
-import icon
 import keyboard.AbstractKeyLayer
 import keyboard.AbstractKeymap
 import keyboard.KC
@@ -82,55 +74,21 @@ import ui.AppWindow
 
 @Composable
 fun HeatmapWindow(
-	isHeatmapWindowOpen: MutableState<Boolean>,
 	pressedKeys: Map<KC, Int>,
 ) {
-	val windowState = WindowState(width = 1000.dp)
+	val areYouSureDialogState = remember { mutableStateOf<AreYouSureDialog?>(null) }
+	val newKeymapDialogState = remember { mutableStateOf<NewKeymapDialog?>(null) }
 	
-	Window(
-		onCloseRequest = { isHeatmapWindowOpen.value = false },
-		state = windowState,
-		title = "Heatmap",
-		icon = icon,
-		visible = isHeatmapWindowOpen.value,
-		transparent = true,
-		undecorated = true
-	) {
-		Surface(
-			modifier = Modifier.fillMaxSize().padding(5.dp).shadow(3.dp, RoundedCornerShape(10.dp)),
-			color = MaterialTheme.colors.background,
-			shape = RoundedCornerShape(10.dp)
-		) {
-			val areYouSureDialogState = remember { mutableStateOf<AreYouSureDialog?>(null) }
-			val newKeymapDialogState = remember { mutableStateOf<NewKeymapDialog?>(null) }
-			
-			println(areYouSureDialogState.value)
-			
-			Box {
-				Column(modifier = Modifier.fillMaxSize()) {
-					WindowDraggableArea {
-						TopAppBar(title = { Text("Heatmap") }, actions = {
-							IconButton(onClick = { isHeatmapWindowOpen.value = false }) {
-								Icon(
-									imageVector = Icons.Rounded.Close,
-									contentDescription = "Close",
-									tint = MaterialTheme.colors.onBackground
-								)
-							}
-						})
-					}
-					HeatmapBody(pressedKeys, areYouSureDialogState, newKeymapDialogState)
-				}
-				// Show a dialog to delete the layer
-				areYouSureDialogState.value?.let {
-					AreYouSureDialog(it)
-				}
-				
-				// Show a dialog to create a new keymap
-				newKeymapDialogState.value?.let {
-					NewKeymapDialog(it)
-				}
-			}
+	Box {
+		HeatmapBody(pressedKeys, areYouSureDialogState, newKeymapDialogState)
+		// Show a dialog to delete the layer
+		areYouSureDialogState.value?.let {
+			AreYouSureDialog(it)
+		}
+		
+		// Show a dialog to create a new keymap
+		newKeymapDialogState.value?.let {
+			NewKeymapDialog(it)
 		}
 	}
 }
@@ -162,8 +120,7 @@ fun HeatmapBody(
 				Spacer(modifier = Modifier.weight(1f))
 				
 				Box {
-					KeymapSelector(
-						keymaps = keymaps,
+					KeymapSelector(keymaps = keymaps,
 						onKeymapSelected = { selectedKeymap.value = it },
 						onKeymapDeleted = {
 							Database.deleteKeymap(it.name)
@@ -392,15 +349,13 @@ private fun KeyboardCanvas(
 		}
 	}
 	
-	AppWindow(
-		isOpen = isNewLayerWindowOpen,
+	AppWindow(isOpen = isNewLayerWindowOpen,
 		title = "New Layer",
 		width = 400.dp,
 		height = 300.dp,
 		content = {
 			NewLayerWindow()
-		}
-	)
+		})
 }
 
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalTextApi::class)
@@ -461,8 +416,7 @@ private fun KeyLayer(
 			val text = "${pressedKeys.getOrDefault(it, 0)}"
 			val percentageText = "${
 				String.format(
-					"%.2f",
-					pressedKeys.getOrDefault(it, 0) / keyTotals.toFloat() * 100
+					"%.2f", pressedKeys.getOrDefault(it, 0) / keyTotals.toFloat() * 100
 				)
 			}%"
 			val textSize = textMeasurer.measure(text).size
@@ -483,9 +437,7 @@ private fun KeyLayer(
 			
 			drawText(
 				text = text, textMeasurer = textMeasurer, style = TextStyle(
-					color = textColor,
-					fontSize = 20.sp,
-					fontFamily = FontFamily("JetBrains Mono")
+					color = textColor, fontSize = 20.sp, fontFamily = FontFamily("JetBrains Mono")
 				),
 				// Draw the text at the center of the bottom left key
 				topLeft = Offset(x = textX, y = textY)
@@ -493,9 +445,7 @@ private fun KeyLayer(
 			
 			drawText(
 				text = percentageText, textMeasurer = textMeasurer, style = TextStyle(
-					color = textColor,
-					fontSize = 20.sp,
-					fontFamily = FontFamily("JetBrains Mono")
+					color = textColor, fontSize = 20.sp, fontFamily = FontFamily("JetBrains Mono")
 				),
 				// Draw the text at the center of the bottom left key
 				topLeft = Offset(x = percentageTextX, y = percentageTextY)
@@ -595,8 +545,6 @@ fun interpolateColor(value: Float): Color {
 
 @Composable
 fun AreYouSureDialog(state: AreYouSureDialog) {
-	println("here")
-	println(MaterialTheme.colors.surface)
 	AlertDialog(onDismissRequest = state.onNo,
 		title = {
 			Text(
