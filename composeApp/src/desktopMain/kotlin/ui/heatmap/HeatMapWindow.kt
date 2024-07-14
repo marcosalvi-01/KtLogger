@@ -70,7 +70,6 @@ import keyboard.AbstractKeyLayer
 import keyboard.AbstractKeymap
 import keyboard.KC
 import keyboard.SplitKeymap
-import ui.AppWindow
 
 @Composable
 fun HeatmapWindow(
@@ -78,9 +77,10 @@ fun HeatmapWindow(
 ) {
 	val areYouSureDialogState = remember { mutableStateOf<AreYouSureDialog?>(null) }
 	val newKeymapDialogState = remember { mutableStateOf<NewKeymapDialog?>(null) }
+	val newLayerDialogState = remember { mutableStateOf<NewLayerDialog?>(null) }
 	
 	Box {
-		HeatmapBody(pressedKeys, areYouSureDialogState, newKeymapDialogState)
+		HeatmapBody(pressedKeys, areYouSureDialogState, newKeymapDialogState, newLayerDialogState)
 		// Show a dialog to delete the layer
 		areYouSureDialogState.value?.let {
 			AreYouSureDialog(it)
@@ -90,6 +90,11 @@ fun HeatmapWindow(
 		newKeymapDialogState.value?.let {
 			NewKeymapDialog(it)
 		}
+		
+		// Show a dialog to create a new layer
+		newLayerDialogState.value?.let {
+			NewLayerDialog(it)
+		}
 	}
 }
 
@@ -98,6 +103,7 @@ fun HeatmapBody(
 	pressedKeys: Map<KC, Int>,
 	areYouSureDialogState: MutableState<AreYouSureDialog?>,
 	newKeymapDialogState: MutableState<NewKeymapDialog?>,
+	newLayerDialogState: MutableState<NewLayerDialog?>,
 ) {
 	val scrollState = rememberScrollState()
 	var keymaps by remember { mutableStateOf(Database.getKeymaps()) }
@@ -120,7 +126,8 @@ fun HeatmapBody(
 				Spacer(modifier = Modifier.weight(1f))
 				
 				Box {
-					KeymapSelector(keymaps = keymaps,
+					KeymapSelector(
+						keymaps = keymaps,
 						onKeymapSelected = { selectedKeymap.value = it },
 						onKeymapDeleted = {
 							Database.deleteKeymap(it.name)
@@ -145,7 +152,7 @@ fun HeatmapBody(
 				modifier = Modifier.padding(start = 15.dp)
 			)
 			
-			KeyboardCanvas(selectedKeymap, pressedKeys, areYouSureDialogState)
+			KeyboardCanvas(selectedKeymap, pressedKeys, areYouSureDialogState, newLayerDialogState)
 		}
 		VerticalScrollbar(
 			modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
@@ -265,10 +272,11 @@ private fun KeyboardCanvas(
 	keymap: MutableState<AbstractKeymap?>,
 	pressedKeys: Map<KC, Int>,
 	areYouSureDialogState: MutableState<AreYouSureDialog?>,
+	newLayerDialogState: MutableState<NewLayerDialog?>,
 ) {
 	if (keymap.value == null) return
 	
-	var isNewLayerWindowOpen = remember { mutableStateOf(false) }
+	val isNewLayerWindowOpen = remember { mutableStateOf(false) }
 	
 	// Create a TextMeasurer
 	val textMeasurer = rememberTextMeasurer()
@@ -329,15 +337,18 @@ private fun KeyboardCanvas(
 					.size(48.dp), contentAlignment = Alignment.Center
 			) {
 				IconButton(onClick = {
-					isNewLayerWindowOpen.value = true
-//					// Add a new layer to the keymap
-//					keymap.value?.addLayer("Test")
-//					// Update the keymap in the database
-//					Database.updateKeymap(keymap.value!!)
-//					// Force the recomposition of the keymap
-//					val selectedKeymap = keymap.value
-//					keymap.value = null
-//					keymap.value = selectedKeymap
+					newLayerDialogState.value = NewLayerDialog(
+						keymap = keymap.value!!,
+						onDismiss = { newLayerDialogState.value = null },
+						onConfirm = { name ->
+							// Create the layer
+							keymap.value!!.addLayer(name)
+							// Update the keymap in the database
+							Database.updateKeymap(keymap.value!!)
+							// Close the dialog
+							newLayerDialogState.value = null
+						}
+					)
 				}) {
 					Icon(
 						imageVector = Icons.Filled.Add,
@@ -348,14 +359,15 @@ private fun KeyboardCanvas(
 			}
 		}
 	}
-	
-	AppWindow(isOpen = isNewLayerWindowOpen,
-		title = "New Layer",
-		width = 400.dp,
-		height = 300.dp,
-		content = {
-			NewLayerWindow()
-		})
+
+//	AppWindow(
+//		isOpen = isNewLayerWindowOpen,
+//		title = "New Layer",
+//		width = 1000.dp,
+//		height = 600.dp,
+//		content = {
+//			NewLayerWindow(keymap)
+//		})
 }
 
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalTextApi::class)

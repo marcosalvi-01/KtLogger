@@ -314,6 +314,7 @@ private fun EditTitleDialog(
 					fontWeight = FontWeight.Bold,
 				)
 				TextField(
+					singleLine = true,
 					value = title,
 					onValueChange = {
 						title = it

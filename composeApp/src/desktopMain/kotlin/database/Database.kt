@@ -381,4 +381,10 @@ object Database {
 			Keymaps.selectAll().map { it[Keymaps.keymap] }
 		}
 	}
+	
+	fun getKeymapsNames(): List<String> {
+		return transaction {
+			Keymaps.selectAll().map { it[Keymaps.name] }
+		}
+	}
 }

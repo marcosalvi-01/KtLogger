@@ -18,6 +18,18 @@ sealed class AbstractKeymap {
 	abstract fun addLayer(name: String): AbstractKeyLayer
 	abstract fun removeLayer(name: String)
 	fun getLayer(name: String): AbstractKeyLayer? = layers.firstOrNull { it.name == name }
+	
+	fun copy(): AbstractKeymap {
+		return when (this) {
+			is Keymap -> {
+				this.copy()
+			}
+			
+			is SplitKeymap -> {
+				this.copy()
+			}
+		}
+	}
 }
 
 @Serializable

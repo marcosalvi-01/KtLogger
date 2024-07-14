@@ -54,7 +54,7 @@ fun NewKeymapDialog(state: NewKeymapDialog) {
 				modifier = Modifier.padding(16.dp),
 				verticalArrangement = Arrangement.spacedBy(16.dp)
 			) {
-				DialogHeader()
+				DialogHeader("Create a new keymap")
 				KeymapForm(state = state,
 					title = title,
 					onTitleChange = { title = it },
@@ -81,9 +81,11 @@ fun NewKeymapDialog(state: NewKeymapDialog) {
 }
 
 @Composable
-private fun DialogHeader() {
+fun DialogHeader(
+	text: String,
+) {
 	Text(
-		text = "Create a new keymap",
+		text = text,
 		style = MaterialTheme.typography.h6,
 		fontWeight = FontWeight.Bold
 	)
