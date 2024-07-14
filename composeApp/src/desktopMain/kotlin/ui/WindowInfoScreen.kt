@@ -68,7 +68,7 @@ private fun WindowInfo(
 			Column(Modifier.fillMaxHeight().fillMaxWidth(0.5f)) {
 				Table(
 					columns = listOf(
-						KeyColumnItem("Key", 0.5f),
+						KeyColumnItem("keyboard.Key", 0.5f),
 						KeyColumnItem("Count", 0.5f),
 						KeyColumnItem("Percentage", 0.5f),
 					),

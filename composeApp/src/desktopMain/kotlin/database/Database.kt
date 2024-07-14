@@ -1,26 +1,33 @@
 package database
 
+import keyboard.AbstractKeymap
 import keyboard.KC
-import keyboard.Keymap
 import keyboard.defaultKeymap
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import logger.MouseButton
 import logger.Position
-import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.Database
+import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.andWhere
+import org.jetbrains.exposed.sql.deleteWhere
+import org.jetbrains.exposed.sql.insert
+import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.sql.update
+import org.jetbrains.exposed.sql.upsert
 import kotlin.time.Duration
 
 object Database {
 	private val _windows = MutableSharedFlow<Map<Pair<String, String>, Duration>>()
 	val windows = _windows.asSharedFlow()
-
+	
 	fun connect() {
 		// Connect to the database
 		Database.connect("jdbc:sqlite:data.db", driver = "org.sqlite.JDBC")
-
+		
 		transaction {
 			// Create the tables if they don't exist
 			SchemaUtils.create(
@@ -34,14 +41,14 @@ object Database {
 				Selected,
 				Keymaps,
 			)
-
+			
 			// Create the default keymap if it doesn't exist
 			if (Keymaps.selectAll().count().toInt() == 0) {
 				createKeymap(defaultKeymap)
 			}
 		}
 	}
-
+	
 	fun setWindowName(id: String, name: String) {
 		transaction {
 			Windows.update({ Windows.id eq id }) {
@@ -49,11 +56,11 @@ object Database {
 			}
 		}
 	}
-
+	
 	suspend fun loadData() {
 		loadWindowsSuspend()
 	}
-
+	
 	fun loadWindows(): Map<Pair<String, String>, Duration> =
 		transaction {
 			Windows.select(
@@ -62,12 +69,12 @@ object Database {
 				Pair(it[Windows.id], it[Windows.name]) to it[Windows.activeTime]
 			}
 		}
-
+	
 	// Updates the loaded windows
 	private suspend fun loadWindowsSuspend() {
 		_windows.emit(loadWindows())
 	}
-
+	
 	// Get the focus time without filtering by window (all the focus time in total)
 	fun getFocusTime(): Duration {
 		return transaction {
@@ -75,7 +82,7 @@ object Database {
 				.reduceOrNull { acc, duration -> acc + duration } ?: Duration.ZERO
 		}
 	}
-
+	
 	fun getFocusTime(windowId: String): Duration {
 		return transaction {
 			Windows.select { Windows.id eq windowId }
@@ -83,7 +90,7 @@ object Database {
 				.reduceOrNull { acc, duration -> acc + duration } ?: Duration.ZERO
 		}
 	}
-
+	
 	fun getFocusTime(windowIds: List<String>): Duration {
 		return transaction {
 			Windows.select { Windows.id inList windowIds }
@@ -91,7 +98,7 @@ object Database {
 				.reduceOrNull { acc, duration -> acc + duration } ?: Duration.ZERO
 		}
 	}
-
+	
 	// Get the keypresses without filtering by window (all the keypresses in total)
 	fun getKeyPresses(): Map<KC, Int> {
 		return transaction {
@@ -102,14 +109,14 @@ object Database {
 			}.mapKeys { KC.getKC(it.key) }
 		}
 	}
-
+	
 	fun getKeyPresses(windowId: String): Map<KC, Int> {
 		return transaction {
 			KeyPresses.select { KeyPresses.windowId eq windowId }
 				.associate { KC.getKC(it[KeyPresses.kc]) to it[KeyPresses.count] }
 		}
 	}
-
+	
 	fun getKeyPresses(windowIds: List<String>): Map<KC, Int> {
 		return transaction {
 			KeyPresses.select { KeyPresses.windowId inList windowIds }
@@ -119,7 +126,7 @@ object Database {
 				}.mapKeys { KC.getKC(it.key) }
 		}
 	}
-
+	
 	// Get the bigrams without filtering by window (all the bigrams in total)
 	fun getBigrams(): Map<Pair<KC, KC>, Int> {
 		return transaction {
@@ -135,7 +142,7 @@ object Database {
 			}
 		}
 	}
-
+	
 	fun getBigrams(windowId: String): Map<Pair<KC, KC>, Int> {
 		return transaction {
 			Bigrams.select { Bigrams.windowId eq windowId }
@@ -147,7 +154,7 @@ object Database {
 				}
 		}
 	}
-
+	
 	fun getBigrams(windowIds: List<String>): Map<Pair<KC, KC>, Int> {
 		return transaction {
 			Bigrams.select { Bigrams.windowId inList windowIds }
@@ -162,7 +169,7 @@ object Database {
 				}
 		}
 	}
-
+	
 	// Get the trigrams without filtering by window (all the trigrams in total)
 	fun getTrigrams(): Map<Triple<KC, KC, KC>, Int> {
 		return transaction {
@@ -177,7 +184,7 @@ object Database {
 			}
 		}
 	}
-
+	
 	fun getTrigrams(windowId: String): Map<Triple<KC, KC, KC>, Int> {
 		return transaction {
 			Trigrams.select { Trigrams.windowId eq windowId }
@@ -190,7 +197,7 @@ object Database {
 				}
 		}
 	}
-
+	
 	fun getTrigrams(windowIds: List<String>): Map<Triple<KC, KC, KC>, Int> {
 		return transaction {
 			Trigrams.select { Trigrams.windowId inList windowIds }
@@ -205,7 +212,7 @@ object Database {
 				}
 		}
 	}
-
+	
 	fun getMousePositions(): Map<Position, Int> {
 		return transaction {
 			MousePositions.selectAll().associate {
@@ -216,7 +223,7 @@ object Database {
 			}
 		}
 	}
-
+	
 	fun getMousePositions(windowId: String): Map<Position, Int> {
 		return transaction {
 			MousePositions.select { MousePositions.windowId eq windowId }
@@ -228,7 +235,7 @@ object Database {
 				}
 		}
 	}
-
+	
 	fun getMousePositions(windowIds: List<String>): Map<Position, Int> {
 		return transaction {
 			MousePositions.select { MousePositions.windowId inList windowIds }
@@ -240,7 +247,7 @@ object Database {
 				}
 		}
 	}
-
+	
 	// Get the mouse buttons without filtering by window (all the mouse buttons in total)
 	fun getMouseButtons(): Map<MouseButton, Int> {
 		return transaction {
@@ -251,14 +258,14 @@ object Database {
 			}
 		}
 	}
-
+	
 	fun getMouseButtons(windowId: String): Map<MouseButton, Int> {
 		return transaction {
 			MouseButtons.select { MouseButtons.windowId eq windowId }
 				.associate { MouseButton.getMouseButton(it[MouseButtons.button]) to it[MouseButtons.count] }
 		}
 	}
-
+	
 	fun getMouseButtons(windowIds: List<String>): Map<MouseButton, Int> {
 		return transaction {
 			MouseButtons.select { MouseButtons.windowId inList windowIds }
@@ -268,7 +275,7 @@ object Database {
 				}
 		}
 	}
-
+	
 	fun getScrollDirections(): Map<logger.ScrollDirection, Int> {
 		return transaction {
 			ScrollDirections.selectAll().groupBy {
@@ -278,14 +285,14 @@ object Database {
 			}
 		}
 	}
-
+	
 	fun getScrollDirections(windowId: String): Map<logger.ScrollDirection, Int> {
 		return transaction {
 			ScrollDirections.select { ScrollDirections.windowId eq windowId }
 				.associate { logger.ScrollDirection.getScrollDirection(it[ScrollDirections.direction]) to it[ScrollDirections.count] }
 		}
 	}
-
+	
 	fun getScrollDirections(windowIds: List<String>): Map<logger.ScrollDirection, Int> {
 		return transaction {
 			ScrollDirections.select { ScrollDirections.windowId inList windowIds }
@@ -295,7 +302,7 @@ object Database {
 				}
 		}
 	}
-
+	
 	fun hideWindow(window: String) {
 		transaction {
 			Windows.update({ Windows.id eq window }) {
@@ -303,7 +310,7 @@ object Database {
 			}
 		}
 	}
-
+	
 	fun selectWindow(window: String) {
 		// insert the window and update the value of "selected" to true
 		transaction {
@@ -313,7 +320,7 @@ object Database {
 			}
 		}
 	}
-
+	
 	fun deselectWindow(window: String) {
 		// update the value of "selected" to false
 		transaction {
@@ -323,7 +330,7 @@ object Database {
 			}
 		}
 	}
-
+	
 	// Return only the windows that have the value of "selected" as true
 	fun getSelectedWindows(): List<String> {
 		return transaction {
@@ -331,14 +338,14 @@ object Database {
 				.map { it[Selected.windowId] }
 		}
 	}
-
+	
 	fun deselectAllWindows() {
 		transaction {
 			Selected.update { it[selected] = false }
 		}
 	}
-
-	fun createKeymap(keymap: Keymap) {
+	
+	fun createKeymap(keymap: AbstractKeymap) {
 		transaction {
 			Keymaps.insert {
 				it[name] = keymap.name
@@ -346,30 +353,30 @@ object Database {
 			}
 		}
 	}
-
-	fun getKeymap(name: String): Keymap? {
+	
+	fun getKeymap(name: String): AbstractKeymap? {
 		return transaction {
 			Keymaps.select { Keymaps.name eq name }
 				.map { it[Keymaps.keymap] }
 				.firstOrNull()
 		}
 	}
-
+	
 	fun deleteKeymap(name: String) {
 		transaction {
 			Keymaps.deleteWhere { Keymaps.name eq name }
 		}
 	}
-
-	fun updateKeymap(keymap: Keymap) {
+	
+	fun updateKeymap(keymap: AbstractKeymap) {
 		transaction {
 			Keymaps.update({ Keymaps.name eq keymap.name }) {
 				it[Keymaps.keymap] = keymap
 			}
 		}
 	}
-
-	fun getKeymaps(): List<Keymap> {
+	
+	fun getKeymaps(): List<AbstractKeymap> {
 		return transaction {
 			Keymaps.selectAll().map { it[Keymaps.keymap] }
 		}

@@ -1,7 +1,7 @@
 package database
 
 
-import keyboard.Keymap
+import keyboard.AbstractKeymap
 import kotlinx.serialization.json.Json
 import org.jetbrains.exposed.sql.Table
 import org.jetbrains.exposed.sql.json.json
@@ -89,10 +89,10 @@ object Keymaps : Table() {
 	val keymap = json(
 		name = "keymap",
 		serialize = {
-			keymapsJson.encodeToString(Keymap.serializer(), it)
+			keymapsJson.encodeToString(AbstractKeymap.serializer(), it)
 		},
 		deserialize = {
-			keymapsJson.decodeFromString(Keymap.serializer(), it)
+			keymapsJson.decodeFromString(AbstractKeymap.serializer(), it)
 		}
 	)
 

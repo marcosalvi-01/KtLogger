@@ -20,6 +20,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.rememberScrollbarAdapter
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.window.WindowDraggableArea
 import androidx.compose.material.AlertDialog
@@ -69,6 +70,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -78,9 +80,10 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowState
 import database.Database
 import icon
+import keyboard.AbstractKeyLayer
+import keyboard.AbstractKeymap
 import keyboard.KC
-import keyboard.KeyLayer
-import keyboard.Keymap
+import keyboard.SplitKeymap
 
 @Composable
 fun HeatmapWindow(
@@ -209,10 +212,10 @@ fun HeatmapBody(
 
 @Composable
 fun KeymapSelector(
-	keymaps: List<Keymap>,
-	onKeymapSelected: (Keymap) -> Unit,
-	onKeymapDeleted: (Keymap) -> Unit,
-	onNewKeymapCreated: (Keymap) -> Unit,
+	keymaps: List<AbstractKeymap>,
+	onKeymapSelected: (AbstractKeymap) -> Unit,
+	onKeymapDeleted: (AbstractKeymap) -> Unit,
+	onNewKeymapCreated: (AbstractKeymap) -> Unit,
 	areYouSureDialogState: MutableState<AreYouSureDialog?>,
 	newKeymapDialogState: MutableState<NewKeymapDialog?>,
 ) {
@@ -294,7 +297,14 @@ fun KeymapSelector(
 			onClick = {
 				newKeymapDialogState.value = NewKeymapDialog(
 					onNewKeymapCreated = {
-						onNewKeymapCreated(Keymap(it, emptyList()))
+						onNewKeymapCreated(
+							SplitKeymap(
+								name = it,
+								sideRows = 3,
+								sideCols = 5,
+								thumbs = 3
+							)
+						)
 					},
 					onDismiss = { newKeymapDialogState.value = null },
 					keymapNames = keymaps.map { it.name }
@@ -325,7 +335,7 @@ fun KeymapSelector(
 
 @Composable
 private fun KeyboardCanvas(
-	keymap: MutableState<Keymap?>,
+	keymap: MutableState<AbstractKeymap?>,
 	pressedKeys: Map<KC, Int>,
 	areYouSureDialogState: MutableState<AreYouSureDialog?>,
 ) {
@@ -358,11 +368,8 @@ private fun KeyboardCanvas(
 								text = "Are you sure you want to delete the layer?",
 								isDestructive = true,
 								onYes = {
-									val updatedKeymap = keymap.value!!.copy(
-										layers = keymap.value!!.layers - layer
-									)
-									Database.updateKeymap(updatedKeymap)
-									keymap.value = updatedKeymap
+									keymap.value!!.removeLayer(layer.name)
+									Database.updateKeymap(keymap.value!!)
 									areYouSureDialogState.value = null
 								},
 								onNo = { areYouSureDialogState.value = null }
@@ -422,7 +429,7 @@ private fun KeyboardCanvas(
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalTextApi::class)
 @Composable
 private fun KeyLayer(
-	layer: KeyLayer,
+	layer: AbstractKeyLayer,
 	pressedKeys: Map<KC, Int>,
 	height: Dp,
 	textColor: Color,
@@ -444,14 +451,14 @@ private fun KeyLayer(
 			}
 	) {
 		// Calculate the size of a key considering the spacing and the layer size
-		val keyWidth = (size.width - (layer.getWidth() + 1) * keySpacing.value) / layer.getWidth()
+		val keyWidth = (size.width - (layer.cols + 1) * keySpacing.value) / layer.cols
 		val keyHeight =
-			(size.height - (layer.getHeight() + 1) * keySpacing.value) / layer.getHeight()
+			(size.height - (layer.rows + 1) * keySpacing.value) / layer.rows
 		
 		// Draw the layer
-		for (j in 0 until layer.getHeight())
-			for (i in 0 until layer.getWidth()) {
-				val kc = layer.getKc(j, i)
+		for (j in 0 until layer.rows)
+			for (i in 0 until layer.cols) {
+				val kc = layer.getKey(j, i)?.kc ?: continue
 				
 				// Calculate the position of the key considering the spacing and the layer size
 				val x = i * keyWidth + (i + 1) * keySpacing.value
@@ -490,7 +497,7 @@ private fun KeyLayer(
 			// Calculate the position of the bottom left key
 			val bottomLeftKeyX = 0 * keyWidth + (0 + 1) * keySpacing.value
 			val bottomLeftKeyY =
-				(layer.getHeight() - 1) * keyHeight + (layer.getHeight()) * keySpacing.value
+				(layer.rows - 1) * keyHeight + (layer.rows) * keySpacing.value
 			
 			// Calculate the x and y coordinates for the text
 			val textX = bottomLeftKeyX + keyWidth / 2 - textSize.width / 2
@@ -727,6 +734,15 @@ fun NewKeymapDialog(state: NewKeymapDialog) {
 					)
 				)
 				
+				// Two text fields to choose the size of the keymap (a 2D matrix)
+				Row() {
+					TextField(
+						keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+						value = "",
+						onValueChange = {},
+					)
+				}
+				
 				Row(
 					modifier = Modifier.fillMaxWidth(),
 					horizontalArrangement = Arrangement.Center,
@@ -770,7 +786,6 @@ fun NewKeymapDialog(state: NewKeymapDialog) {
 		}
 	}
 }
-
 
 data class NewKeymapDialog(
 	val keymapNames: List<String>,

@@ -39,6 +39,7 @@ fun main() {
 			setSize(300, 300)
 			isVisible = true
 		}
+		e.printStackTrace()
 		
 		// Save the error log to a file
 		logExceptionToFile(e)
