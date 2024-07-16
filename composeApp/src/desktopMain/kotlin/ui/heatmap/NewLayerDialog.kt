@@ -28,7 +28,7 @@ import keyboard.AbstractKeymap
 data class NewLayerDialog(
 	val keymap: AbstractKeymap,
 	val onDismiss: () -> Unit,
-	val onConfirm: (String) -> Unit,
+	val onConfirm: (name: String) -> Unit,
 )
 
 @Composable

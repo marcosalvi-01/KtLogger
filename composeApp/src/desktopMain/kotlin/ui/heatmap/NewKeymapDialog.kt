@@ -41,7 +41,8 @@ fun NewKeymapDialog(state: NewKeymapDialog) {
 			(title !in state.keymapNames) &&
 			(rows.toIntOrNull() != null) &&
 			(cols.toIntOrNull() != null) &&
-			(!split || (thumbs.toIntOrNull() != null))
+			(!split || (thumbs.toIntOrNull() != null)) &&
+			(!split || (thumbs.toIntOrNull() ?: 0) <= (cols.toIntOrNull() ?: 0))
 	
 	Dialog(onDismissRequest = state.onDismiss) {
 		Card(
@@ -113,7 +114,15 @@ private fun KeymapForm(
 		Text(
 			text = "A keymap with this name already exists",
 			color = MaterialTheme.colors.error,
-			style = MaterialTheme.typography.caption,
+			modifier = Modifier.padding(top = 4.dp)
+		)
+	}
+	
+	// Thumb count must be greater than 0 and less than the number of columns
+	if (split && (thumbs.toIntOrNull() ?: 0) > (cols.toIntOrNull() ?: Int.MAX_VALUE)) {
+		Text(
+			text = "The number of thumb keys must be between 0 and ${cols.toIntOrNull()}",
+			color = MaterialTheme.colors.error,
 			modifier = Modifier.padding(top = 4.dp)
 		)
 	}

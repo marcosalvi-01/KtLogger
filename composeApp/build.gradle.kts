@@ -27,7 +27,6 @@ kotlin {
 			implementation("net.java.dev.jna:jna-platform:5.14.0")
 			implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.0")
 			implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.6.0")
-			implementation("com.google.code.gson:gson:2.8.9")
 			implementation("com.darkrockstudios:mpfilepicker:3.1.0")
 			implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
 

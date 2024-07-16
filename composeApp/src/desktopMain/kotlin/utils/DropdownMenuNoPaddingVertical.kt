@@ -32,7 +32,7 @@ fun DropdownMenuNoPaddingVeitical(
 ) {
 	val expandedStates = remember { MutableTransitionState(false) }
 	expandedStates.targetState = expanded
-
+	
 	if (expandedStates.currentState || expandedStates.targetState) {
 		val transformOriginState = remember { mutableStateOf(TransformOrigin.Center) }
 		val density = LocalDensity.current
@@ -42,7 +42,7 @@ fun DropdownMenuNoPaddingVeitical(
 		) { parentBounds, menuBounds ->
 			transformOriginState.value = calculateTransformOrigin(parentBounds, menuBounds)
 		}
-
+		
 		Popup(
 			onDismissRequest = onDismissRequest,
 			popupPositionProvider = popupPositionProvider,
@@ -67,7 +67,7 @@ fun DropdownMenuContent(
 ) {
 	// Menu open/close animation.
 	val transition = updateTransition(expandedStates, "DropDownMenu")
-
+	
 	val scale by transition.animateFloat(
 		transitionSpec = {
 			if (false isTransitioningTo true) {
@@ -93,7 +93,7 @@ fun DropdownMenuContent(
 			0.8f
 		}
 	}
-
+	
 	val alpha by transition.animateFloat(
 		transitionSpec = {
 			if (false isTransitioningTo true) {
@@ -150,7 +150,7 @@ data class DropdownMenuPositionProvider(
 		// The content offset specified using the dropdown offset parameter.
 		val contentOffsetX = with(density) { contentOffset.x.roundToPx() }
 		val contentOffsetY = with(density) { contentOffset.y.roundToPx() }
-
+		
 		// Compute horizontal position.
 		val toRight = anchorBounds.left + contentOffsetX
 		val toLeft = anchorBounds.right - contentOffsetX - popupContentSize.width
@@ -175,7 +175,7 @@ data class DropdownMenuPositionProvider(
 		}.firstOrNull {
 			it >= 0 && it + popupContentSize.width <= windowSize.width
 		} ?: toLeft
-
+		
 		// Compute vertical position.
 		val toBottom = maxOf(anchorBounds.bottom + contentOffsetY, verticalMargin)
 		val toTop = anchorBounds.top - contentOffsetY - popupContentSize.height
@@ -185,7 +185,7 @@ data class DropdownMenuPositionProvider(
 			it >= verticalMargin &&
 					it + popupContentSize.height <= windowSize.height - verticalMargin
 		} ?: toTop
-
+		
 		onPositionCalculated(
 			anchorBounds,
 			IntRect(x, y, x + popupContentSize.width, y + popupContentSize.height)

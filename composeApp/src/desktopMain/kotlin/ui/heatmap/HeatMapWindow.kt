@@ -4,6 +4,7 @@ import DropdownMenuNoPaddingVeitical
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.VerticalScrollbar
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -55,6 +56,7 @@ import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.onPointerEvent
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
@@ -62,6 +64,7 @@ import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -69,6 +72,7 @@ import database.Database
 import keyboard.AbstractKeyLayer
 import keyboard.AbstractKeymap
 import keyboard.KC
+import keyboard.Keymap
 import keyboard.SplitKeymap
 
 @Composable
@@ -78,9 +82,16 @@ fun HeatmapWindow(
 	val areYouSureDialogState = remember { mutableStateOf<AreYouSureDialog?>(null) }
 	val newKeymapDialogState = remember { mutableStateOf<NewKeymapDialog?>(null) }
 	val newLayerDialogState = remember { mutableStateOf<NewLayerDialog?>(null) }
+	val changeKeyDialogState = remember { mutableStateOf<ChangeKeyDialog?>(null) }
 	
 	Box {
-		HeatmapBody(pressedKeys, areYouSureDialogState, newKeymapDialogState, newLayerDialogState)
+		HeatmapBody(
+			pressedKeys,
+			areYouSureDialogState,
+			newKeymapDialogState,
+			newLayerDialogState,
+			changeKeyDialogState
+		)
 		// Show a dialog to delete the layer
 		areYouSureDialogState.value?.let {
 			AreYouSureDialog(it)
@@ -95,6 +106,11 @@ fun HeatmapWindow(
 		newLayerDialogState.value?.let {
 			NewLayerDialog(it)
 		}
+		
+		// Show a dialog to change the key
+		changeKeyDialogState.value?.let {
+			ChangeKeyDialog(it)
+		}
 	}
 }
 
@@ -104,6 +120,7 @@ fun HeatmapBody(
 	areYouSureDialogState: MutableState<AreYouSureDialog?>,
 	newKeymapDialogState: MutableState<NewKeymapDialog?>,
 	newLayerDialogState: MutableState<NewLayerDialog?>,
+	changeKeyDialogState: MutableState<ChangeKeyDialog?>,
 ) {
 	val scrollState = rememberScrollState()
 	var keymaps by remember { mutableStateOf(Database.getKeymaps()) }
@@ -152,7 +169,13 @@ fun HeatmapBody(
 				modifier = Modifier.padding(start = 15.dp)
 			)
 			
-			KeyboardCanvas(selectedKeymap, pressedKeys, areYouSureDialogState, newLayerDialogState)
+			KeyboardCanvas(
+				selectedKeymap,
+				pressedKeys,
+				areYouSureDialogState,
+				newLayerDialogState,
+				changeKeyDialogState
+			)
 		}
 		VerticalScrollbar(
 			modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
@@ -238,9 +261,15 @@ fun KeymapSelector(
 			newKeymapDialogState.value =
 				NewKeymapDialog(onNewKeymapCreated = { name, rows, cols, thumbs ->
 					onNewKeymapCreated(
-						SplitKeymap(
-							name = name, sideRows = rows, sideCols = cols, thumbs = 3
-						)
+						if (thumbs == null)
+							Keymap(name = name, rows = rows, cols = cols)
+						else
+							SplitKeymap(
+								name = name,
+								sideRows = rows,
+								sideCols = cols,
+								thumbs = thumbs
+							)
 					)
 				},
 					onDismiss = { newKeymapDialogState.value = null },
@@ -273,16 +302,15 @@ private fun KeyboardCanvas(
 	pressedKeys: Map<KC, Int>,
 	areYouSureDialogState: MutableState<AreYouSureDialog?>,
 	newLayerDialogState: MutableState<NewLayerDialog?>,
+	changeKeyDialogState: MutableState<ChangeKeyDialog?>,
 ) {
 	if (keymap.value == null) return
-	
-	val isNewLayerWindowOpen = remember { mutableStateOf(false) }
 	
 	// Create a TextMeasurer
 	val textMeasurer = rememberTextMeasurer()
 	
 	Box(Modifier.fillMaxSize()) {
-		Column {
+		Column(modifier = Modifier.fillMaxWidth()) {
 			for (layer in keymap.value!!.layers) {
 				Row(
 					modifier = Modifier.fillMaxWidth(),
@@ -320,7 +348,13 @@ private fun KeyboardCanvas(
 				// The keys in the layer
 				val layerPressedKeys = pressedKeys.filterKeys { layer.contains(it) }
 				KeyLayer(
-					layer, layerPressedKeys, 200.dp, MaterialTheme.colors.onBackground, textMeasurer
+					layer,
+					layerPressedKeys,
+					200.dp,
+					MaterialTheme.colors.onBackground,
+					textMeasurer,
+					changeKeyDialogState,
+					keymap.value!!
 				)
 				
 				Divider(
@@ -359,15 +393,6 @@ private fun KeyboardCanvas(
 			}
 		}
 	}
-
-//	AppWindow(
-//		isOpen = isNewLayerWindowOpen,
-//		title = "New Layer",
-//		width = 1000.dp,
-//		height = 600.dp,
-//		content = {
-//			NewLayerWindow(keymap)
-//		})
 }
 
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalTextApi::class)
@@ -378,6 +403,8 @@ private fun KeyLayer(
 	height: Dp,
 	textColor: Color,
 	textMeasurer: TextMeasurer,
+	changeKeyDialogState: MutableState<ChangeKeyDialog?>,
+	keymap: AbstractKeymap,
 ) {
 	val mousePosition = remember { mutableStateOf(Offset.Zero) }
 	val hoveredKey = remember { mutableStateOf<KC?>(null) }
@@ -386,11 +413,38 @@ private fun KeyLayer(
 	
 	val keyTotals = pressedKeys.values.sum()
 	
-	Canvas(modifier = Modifier.height(height).fillMaxWidth().padding(10.dp)
+	Canvas(modifier = Modifier
+		.height(height)
+		.fillMaxWidth()
+		.padding(10.dp)
 		.onPointerEvent(PointerEventType.Move) {
 			mousePosition.value = it.changes.first().position
-		}) {
-		// Calculate the size of a key considering the spacing and the layer size
+		}
+		.pointerInput(Unit) {
+			detectTapGestures { offset ->
+				// Find the clicked key
+				val clickedKey = findClickedKey(
+					offset,
+					layer,
+					Size(size.width.toFloat(), size.height.toFloat()),
+					this
+				)
+				clickedKey?.let {
+					changeKeyDialogState.value = ChangeKeyDialog(
+						keyLayer = layer,
+						row = it.first,
+						col = it.second,
+						onDismiss = { changeKeyDialogState.value = null },
+						onConfirm = { row, col, layerKey ->
+							layer.setKey(row, col, layerKey)
+							Database.updateKeymap(keymap)
+							changeKeyDialogState.value = null
+						}
+					)
+				}
+			}
+		}
+	) {// Calculate the size of a key considering the spacing and the layer size
 		val keyWidth = (size.width - (layer.cols + 1) * keySpacing.value) / layer.cols
 		val keyHeight = (size.height - (layer.rows + 1) * keySpacing.value) / layer.rows
 		
@@ -466,6 +520,36 @@ private fun KeyLayer(
 	}
 }
 
+private fun findClickedKey(
+	offset: Offset,
+	layer: AbstractKeyLayer,
+	canvasSize: Size,
+	density: Density,
+): Pair<Int, Int>? {
+	with(density) {
+		val keySpacing = 10.dp.toPx()
+		val keyWidth = (canvasSize.width - (layer.cols + 1) * keySpacing) / layer.cols
+		val keyHeight = (canvasSize.height - (layer.rows + 1) * keySpacing) / layer.rows
+		
+		for (j in 0 until layer.rows) {
+			for (i in 0 until layer.cols) {
+				val x = i * keyWidth + (i + 1) * keySpacing
+				val y = j * keyHeight + (j + 1) * keySpacing
+				val keyRect = Rect(
+					left = x,
+					top = y,
+					right = x + keyWidth,
+					bottom = y + keyHeight
+				)
+				if (keyRect.contains(offset)) {
+					layer.getKey(j, i)?.kc?.let { return Pair(j, i) }
+				}
+			}
+		}
+	}
+	return null
+}
+
 @OptIn(ExperimentalTextApi::class)
 private fun DrawScope.key(
 	kc: KC,
@@ -479,8 +563,6 @@ private fun DrawScope.key(
 	keySize: Size,
 ) {
 	if (kc == KC.UNKNOWN) return
-
-//	val size = Size(width = layerSize.width * 0.08f, height = layerSize.height * 0.2f)
 	
 	val keyRect = Rect(
 		left = x, top = y, right = x + keySize.width, bottom = y + keySize.height
