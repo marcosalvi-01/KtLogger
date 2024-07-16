@@ -347,15 +347,53 @@ private fun KeyboardCanvas(
 				
 				// The keys in the layer
 				val layerPressedKeys = pressedKeys.filterKeys { layer.contains(it) }
+				val hoveredKey = remember { mutableStateOf<KC?>(null) }
 				KeyLayer(
 					layer,
 					layerPressedKeys,
-					200.dp,
+					// Calculate the height of the layer based on the number of rows
+					(50 * keymap.value!!.rows).dp,
 					MaterialTheme.colors.onBackground,
 					textMeasurer,
 					changeKeyDialogState,
-					keymap.value!!
+					keymap.value!!,
+					hoveredKey
 				)
+				
+				// If the keymap is not split
+				if (keymap.value is Keymap) {
+					val keyTotals = pressedKeys.values.sum()
+					val onBackgroundColor = MaterialTheme.colors.onBackground
+					Canvas(
+						modifier = Modifier.fillMaxWidth().height(60.dp).padding(bottom = 10.dp),
+					) {
+						hoveredKey.value?.let {
+							drawKeyInfo(
+								layer,
+								pressedKeys,
+								keyTotals,
+								onBackgroundColor,
+								textMeasurer,
+								(size.width - (layer.cols + 1) * keySpacing.value) / layer.cols,
+								(size.height - (layer.rows + 1) * keySpacing.value) / layer.rows,
+								it,
+								x = 15.dp.toPx(),
+								y = (size.height - 10.dp.toPx()) / 2
+							)
+						}
+						
+						// Draw the palette
+						palette(
+							size.width * 0.5f,
+							size.height * 0.5f,
+							Size(
+								width = size.width * 0.4f,
+								height = size.height * 0.7f
+							),
+							Direction.HORIZONTAL
+						)
+					}
+				}
 				
 				Divider(
 					color = MaterialTheme.colors.onSurface.copy(alpha = 0.1f),
@@ -395,7 +433,9 @@ private fun KeyboardCanvas(
 	}
 }
 
-@OptIn(ExperimentalComposeUiApi::class, ExperimentalTextApi::class)
+internal val keySpacing = 10.dp
+
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 private fun KeyLayer(
 	layer: AbstractKeyLayer,
@@ -405,11 +445,9 @@ private fun KeyLayer(
 	textMeasurer: TextMeasurer,
 	changeKeyDialogState: MutableState<ChangeKeyDialog?>,
 	keymap: AbstractKeymap,
+	hoveredKey: MutableState<KC?>,
 ) {
 	val mousePosition = remember { mutableStateOf(Offset.Zero) }
-	val hoveredKey = remember { mutableStateOf<KC?>(null) }
-	
-	val keySpacing = 10.dp
 	
 	val keyTotals = pressedKeys.values.sum()
 	
@@ -419,6 +457,12 @@ private fun KeyLayer(
 		.padding(10.dp)
 		.onPointerEvent(PointerEventType.Move) {
 			mousePosition.value = it.changes.first().position
+			hoveredKey.value = findHoveredKey(
+				mousePosition.value,
+				layer,
+				Size(size.width.toFloat(), size.height.toFloat()),
+				this
+			)
 		}
 		.pointerInput(Unit) {
 			detectTapGestures { offset ->
@@ -444,7 +488,8 @@ private fun KeyLayer(
 				}
 			}
 		}
-	) {// Calculate the size of a key considering the spacing and the layer size
+	) {
+		// Calculate the size of a key considering the spacing and the layer size
 		val keyWidth = (size.width - (layer.cols + 1) * keySpacing.value) / layer.cols
 		val keyHeight = (size.height - (layer.rows + 1) * keySpacing.value) / layer.rows
 		
@@ -469,55 +514,119 @@ private fun KeyLayer(
 			)
 		}
 		
-		// Draw the color palette in the middle vertically
-		palette(
-			size.width * 0.5f,
-			size.height * 0.5f,
-			Size(width = size.width * 0.04f, height = size.height - keySpacing.value * 2),
-		)
-		
-		// Display the number of times the hovered key was pressed
-		hoveredKey.value?.let {
-			// Calculate the size of the text
-			val text = "${pressedKeys.getOrDefault(it, 0)}"
-			val percentageText = "${
-				String.format(
-					"%.2f", pressedKeys.getOrDefault(it, 0) / keyTotals.toFloat() * 100
-				)
-			}%"
-			val textSize = textMeasurer.measure(text).size
-			val percentageTextSize = textMeasurer.measure(percentageText).size
-			
-			// Calculate the position of the bottom left key
-			val bottomLeftKeyX = 0 * keyWidth + (0 + 1) * keySpacing.value
-			val bottomLeftKeyY = (layer.rows - 1) * keyHeight + (layer.rows) * keySpacing.value
-			
-			// Calculate the x and y coordinates for the text
-			val textX = bottomLeftKeyX + keyWidth / 2 - textSize.width / 2
-			val textY = bottomLeftKeyY + keyHeight / 2 - textSize.height / 2
-			
-			// Calculate the x and y coordinates for the percentage text
-			val percentageTextX =
-				(bottomLeftKeyX + keyWidth) + keyWidth / 2 - percentageTextSize.width / 2
-			val percentageTextY = bottomLeftKeyY + keyHeight / 2 - percentageTextSize.height / 2
-			
-			drawText(
-				text = text, textMeasurer = textMeasurer, style = TextStyle(
-					color = textColor, fontSize = 20.sp, fontFamily = FontFamily("JetBrains Mono")
-				),
-				// Draw the text at the center of the bottom left key
-				topLeft = Offset(x = textX, y = textY)
-			)
-			
-			drawText(
-				text = percentageText, textMeasurer = textMeasurer, style = TextStyle(
-					color = textColor, fontSize = 20.sp, fontFamily = FontFamily("JetBrains Mono")
-				),
-				// Draw the text at the center of the bottom left key
-				topLeft = Offset(x = percentageTextX, y = percentageTextY)
+		// If the keymap is split draw the palette vertically in the middle
+		if (keymap is SplitKeymap) {
+			palette(
+				size.width * 0.5f,
+				size.height * 0.5f,
+				Size(width = size.width * 0.04f, height = size.height - keySpacing.value * 2),
+				Direction.VERTICAL
 			)
 		}
+		
+		// Display the number of times the hovered key was pressed for split keyboards
+		if (keymap is SplitKeymap && keymap.thumbs <= (keymap.cols - 2)) {
+			hoveredKey.value?.let {
+				drawKeyInfo(
+					layer,
+					pressedKeys,
+					keyTotals,
+					textColor,
+					textMeasurer,
+					keyWidth,
+					keyHeight,
+					it
+				)
+			}
+		}
 	}
+}
+
+private fun DrawScope.drawKeyInfo(
+	layer: AbstractKeyLayer,
+	pressedKeys: Map<KC, Int>,
+	keyTotals: Int,
+	textColor: Color,
+	textMeasurer: TextMeasurer,
+	keyWidth: Float,
+	keyHeight: Float,
+	hoveredKey: KC?,
+	x: Float? = null,
+	y: Float? = null,
+) {
+	// Calculate the size of the text
+	val text = "${pressedKeys.getOrDefault(hoveredKey, 0)}"
+	val percentageText = "${
+		String.format(
+			"%.2f", pressedKeys.getOrDefault(hoveredKey, 0) / keyTotals.toFloat() * 100
+		)
+	}%"
+	val textSize = textMeasurer.measure(text).size
+	val percentageTextSize = textMeasurer.measure(percentageText).size
+	
+	// Calculate the position of the bottom left key
+	val bottomLeftKeyX = x ?: (0 * keyWidth + (0 + 1) * keySpacing.value)
+	val bottomLeftKeyY = y ?: ((layer.rows - 1) * keyHeight + (layer.rows) * keySpacing.value)
+	
+	// Calculate the x and y coordinates for the text
+	val textX = bottomLeftKeyX + keyWidth / 2 - textSize.width / 2
+	val textY = bottomLeftKeyY + keyHeight / 2 - textSize.height / 2
+	
+	// Calculate the x and y coordinates for the percentage text
+	val percentageTextX =
+		(bottomLeftKeyX + keyWidth) + keyWidth / 2 - percentageTextSize.width / 2
+	val percentageTextY = bottomLeftKeyY + keyHeight / 2 - percentageTextSize.height / 2
+	
+	drawText(
+		text = text, textMeasurer = textMeasurer, style = TextStyle(
+			color = textColor,
+			fontSize = 20.sp,
+		),
+		// Draw the text at the center of the bottom left key
+		topLeft = Offset(x = textX, y = textY)
+	)
+	
+	drawText(
+		text = percentageText, textMeasurer = textMeasurer, style = TextStyle(
+			color = textColor,
+			fontSize = 20.sp,
+		),
+		// Draw the text at the center of the bottom left key
+		topLeft = Offset(x = percentageTextX, y = percentageTextY)
+	)
+}
+
+private fun findHoveredKey(
+	position: Offset,
+	layer: AbstractKeyLayer,
+	size: Size,
+	density: Density,
+): KC? {
+	with(density) {
+		// Calculate the size of a key considering the spacing and the layer size
+		val keyWidth = (size.width - (layer.cols + 1) * keySpacing.toPx()) / layer.cols
+		val keyHeight = (size.height - (layer.rows + 1) * keySpacing.toPx()) / layer.rows
+		
+		// Iterate through all keys in the layer
+		for (row in 0 until layer.rows) {
+			for (col in 0 until layer.cols) {
+				// Calculate the position of the key
+				val x = col * keyWidth + (col + 1) * keySpacing.toPx()
+				val y = row * keyHeight + (row + 1) * keySpacing.toPx()
+				
+				// Check if the position is within this key's bounds
+				if (position.x >= x && position.x < x + keyWidth &&
+					position.y >= y && position.y < y + keyHeight
+				) {
+					// Return the KC of the hovered key
+					return layer.getKey(row, col)?.kc
+				}
+			}
+		}
+	}
+	
+	// If no key is hovered, return null
+	return null
 }
 
 private fun findClickedKey(
@@ -599,19 +708,39 @@ private fun DrawScope.key(
 	}
 }
 
-// Draw the color palette vertically using interpolateColor
-private fun DrawScope.palette(x: Float, y: Float, size: Size) {
-	val steps = size.height.toInt()
+internal enum class Direction {
+	HORIZONTAL, VERTICAL
+}
+
+private fun DrawScope.palette(
+	x: Float,
+	y: Float,
+	size: Size,
+	direction: Direction = Direction.VERTICAL,
+) {
+	val steps = if (direction == Direction.VERTICAL) size.height.toInt() else size.width.toInt()
 	translate(
 		left = x - size.width / 2, top = y - size.height / 2
 	) {
 		for (i in 0..steps) {
-			val color = interpolateColor((steps - i) / steps.toFloat())
-			drawRect(
-				color = color,
-				size = Size(width = size.width, height = size.height / steps),
-				topLeft = Offset(x = 0f, y = i * size.height / steps)
-			)
+			val color = interpolateColor(i / steps.toFloat())
+			when (direction) {
+				Direction.VERTICAL -> {
+					drawRect(
+						color = color,
+						size = Size(width = size.width, height = size.height / steps),
+						topLeft = Offset(x = 0f, y = (steps - i) * size.height / steps)
+					)
+				}
+				
+				Direction.HORIZONTAL -> {
+					drawRect(
+						color = color,
+						size = Size(width = size.width / steps, height = size.height),
+						topLeft = Offset(x = i * size.width / steps, y = 0f)
+					)
+				}
+			}
 		}
 	}
 }
