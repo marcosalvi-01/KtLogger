@@ -469,12 +469,12 @@ private fun KeyLayer(
 				this
 			)
 		}
-		.pointerInput(Unit) {
+		.pointerInput(layer) {
 			detectTapGestures { offset ->
 				// Find the clicked key
 				val clickedKey = findClickedKey(
 					offset,
-					layer,
+					layer.apply { println("click layer: " + this.name) },
 					Size(size.width.toFloat(), size.height.toFloat()),
 					this
 				)
