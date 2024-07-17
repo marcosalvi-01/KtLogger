@@ -360,12 +360,15 @@ private fun KeyboardCanvas(
 					hoveredKey
 				)
 				
-				// If the keymap is not split
-				if (keymap.value is Keymap) {
+				// If the keymap is split and the thumbs are more than the columns - 2 or the keymap is not split
+				if ((keymap.value is SplitKeymap && (keymap.value as SplitKeymap).thumbs > ((keymap.value as SplitKeymap).sideCols - 2)) ||
+					keymap.value is Keymap
+				) {
 					val keyTotals = pressedKeys.values.sum()
 					val onBackgroundColor = MaterialTheme.colors.onBackground
 					Canvas(
-						modifier = Modifier.fillMaxWidth().height(60.dp).padding(bottom = 10.dp),
+						modifier = Modifier.fillMaxWidth().height(60.dp)
+							.padding(bottom = 10.dp),
 					) {
 						hoveredKey.value?.let {
 							drawKeyInfo(
@@ -382,16 +385,18 @@ private fun KeyboardCanvas(
 							)
 						}
 						
-						// Draw the palette
-						palette(
-							size.width * 0.5f,
-							size.height * 0.5f,
-							Size(
-								width = size.width * 0.4f,
-								height = size.height * 0.7f
-							),
-							Direction.HORIZONTAL
-						)
+						// Draw the palette only if the keymap is not split
+						if (keymap.value is Keymap) {
+							palette(
+								size.width * 0.5f,
+								size.height * 0.5f,
+								Size(
+									width = size.width * 0.4f,
+									height = size.height * 0.7f
+								),
+								Direction.HORIZONTAL
+							)
+						}
 					}
 				}
 				
@@ -525,7 +530,7 @@ private fun KeyLayer(
 		}
 		
 		// Display the number of times the hovered key was pressed for split keyboards
-		if (keymap is SplitKeymap && keymap.thumbs <= (keymap.cols - 2)) {
+		if (keymap is SplitKeymap && keymap.thumbs <= (keymap.sideCols - 2)) {
 			hoveredKey.value?.let {
 				drawKeyInfo(
 					layer,

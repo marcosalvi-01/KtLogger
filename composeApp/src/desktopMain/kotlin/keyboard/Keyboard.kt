@@ -76,8 +76,8 @@ data class KeyLayer(
 @Serializable
 data class SplitKeymap(
 	override val name: String,
-	private val sideRows: Int,
-	private val sideCols: Int,
+	val sideRows: Int,
+	val sideCols: Int,
 	val thumbs: Int,
 ) : AbstractKeymap() {
 	private val _layers = mutableListOf<SplitKeyLayer>()
