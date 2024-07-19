@@ -4,7 +4,9 @@ import keyboard.AbstractKeymap
 import keyboard.KC
 import keyboard.defaultKeymap
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import logger.MouseButton
 import logger.Position
 import org.jetbrains.exposed.sql.Database
@@ -23,6 +25,10 @@ import kotlin.time.Duration
 object Database {
 	private val _windows = MutableSharedFlow<Map<Pair<String, String>, Duration>>()
 	val windows = _windows.asSharedFlow()
+	
+	// Lazy initialization because the db needs to be connected first
+	private val _totalTime by lazy { MutableStateFlow(getFocusTime()) }
+	val totalTime by lazy { _totalTime.asStateFlow() }
 	
 	fun connect() {
 		// Connect to the database
@@ -59,6 +65,7 @@ object Database {
 	
 	suspend fun loadData() {
 		loadWindowsSuspend()
+		getFocusTimeSuspend()
 	}
 	
 	fun loadWindows(): Map<Pair<String, String>, Duration> =
@@ -80,7 +87,12 @@ object Database {
 		return transaction {
 			Windows.selectAll().map { it[Windows.activeTime] }
 				.reduceOrNull { acc, duration -> acc + duration } ?: Duration.ZERO
+			
 		}
+	}
+	
+	private suspend fun getFocusTimeSuspend() {
+		_totalTime.emit(getFocusTime())
 	}
 	
 	fun getFocusTime(windowId: String): Duration {

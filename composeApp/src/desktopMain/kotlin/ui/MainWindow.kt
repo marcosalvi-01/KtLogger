@@ -74,6 +74,7 @@ fun MainWindow(
 							WindowDraggableArea {
 								TopAppBar(
 									title = {
+										val time by Database.totalTime.collectAsState()
 										if (it.canPop && it.lastItem is WindowInfoScreen)
 											Row {
 												val screen = it.lastItem as WindowInfoScreen
@@ -82,7 +83,6 @@ fun MainWindow(
 												Text(text = screen.focusTime.format())
 											}
 										else if (it.lastItem is HomeScreen) {
-											val time = (it.lastItem as HomeScreen).timeTotal
 											// Have the home text at the start and the time at the end
 											Row {
 												Text(text = "Home")
@@ -107,22 +107,25 @@ fun MainWindow(
 												SystemLogger.start()
 										}
 										
-										// Refresh the data
-										IconButton(
-											onClick = {
-												// Refresh the data
-												CoroutineScope(Dispatchers.Default).launch {
-													SystemLogger.saveData()
-													Database.loadData()
-												}
-											},
-											modifier = Modifier.padding(start = 10.dp)
-										) {
-											Icon(
-												Icons.Filled.Refresh,
-												contentDescription = "Refresh",
-												tint = MaterialTheme.colors.onBackground
-											)
+										// TODO implement the refresh button in the window info screen
+										if (it.lastItem is HomeScreen) {
+											// Refresh the data
+											IconButton(
+												onClick = {
+													// Refresh the data
+													CoroutineScope(Dispatchers.Default).launch {
+														SystemLogger.saveData()
+														Database.loadData()
+													}
+												},
+												modifier = Modifier.padding(start = 10.dp)
+											) {
+												Icon(
+													Icons.Filled.Refresh,
+													contentDescription = "Refresh",
+													tint = MaterialTheme.colors.onBackground
+												)
+											}
 										}
 										
 										// Close the window

@@ -59,7 +59,6 @@ import logger.format
 import kotlin.time.Duration
 
 class HomeScreen : Screen {
-	val timeTotal = Database.getFocusTime()
 	private val selected = mutableStateOf(Database.getSelectedWindows())
 	
 	@Composable
@@ -81,8 +80,7 @@ private fun Home(selected: MutableState<List<String>>) {
 	val navigator = LocalNavigator.currentOrThrow
 	
 	Column(
-		horizontalAlignment = Alignment.CenterHorizontally,
-		modifier = Modifier.fillMaxSize()
+		horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxSize()
 	) {
 		
 		val scrollState = rememberScrollState()
@@ -94,45 +92,41 @@ private fun Home(selected: MutableState<List<String>>) {
 					Row(
 						horizontalArrangement = Arrangement.Start,
 					) {
-						Button(
-							onClick = {
-								// Go to the window info screen
-								navigator.push(
-									WindowInfoScreen(
-										"Totals",
-										Database.getFocusTime(),
-										Database.getKeyPresses(),
-										Database.getBigrams(),
-										Database.getTrigrams(),
-										Database.getMouseButtons(),
-										Database.getScrollDirections(),
-										Database.getMousePositions(),
-									)
+						Button(onClick = {
+							// Go to the window info screen
+							navigator.push(
+								WindowInfoScreen(
+									"Totals",
+									Database.getFocusTime(),
+									Database.getKeyPresses(),
+									Database.getBigrams(),
+									Database.getTrigrams(),
+									Database.getMouseButtons(),
+									Database.getScrollDirections(),
+									Database.getMousePositions(),
 								)
-							}
-						) {
+							)
+						}) {
 							Text("Totals")
 						}
 						
 						Spacer(Modifier.width(8.dp))
 						
-						Button(
-							onClick = {
-								// Go to the window info screen
-								navigator.push(
-									WindowInfoScreen(
-										"Selected",
-										Database.getFocusTime(selected.value),
-										Database.getKeyPresses(selected.value),
-										Database.getBigrams(selected.value),
-										Database.getTrigrams(selected.value),
-										Database.getMouseButtons(selected.value),
-										Database.getScrollDirections(selected.value),
-										Database.getMousePositions(selected.value),
-									)
+						Button(onClick = {
+							// Go to the window info screen
+							navigator.push(
+								WindowInfoScreen(
+									"Selected",
+									Database.getFocusTime(selected.value),
+									Database.getKeyPresses(selected.value),
+									Database.getBigrams(selected.value),
+									Database.getTrigrams(selected.value),
+									Database.getMouseButtons(selected.value),
+									Database.getScrollDirections(selected.value),
+									Database.getMousePositions(selected.value),
 								)
-							}
-						) {
+							)
+						}) {
 							Text("Selected")
 						}
 						
@@ -143,13 +137,11 @@ private fun Home(selected: MutableState<List<String>>) {
 					Row(
 						horizontalArrangement = Arrangement.End,
 					) {
-						Button(
-							onClick = {
-								// Deselect all the windows
-								Database.deselectAllWindows()
-								selected.value = Database.getSelectedWindows()
-							}
-						) {
+						Button(onClick = {
+							// Deselect all the windows
+							Database.deselectAllWindows()
+							selected.value = Database.getSelectedWindows()
+						}) {
 							Text("Deselect all")
 						}
 					}
@@ -159,11 +151,7 @@ private fun Home(selected: MutableState<List<String>>) {
 				// Display the data
 				for ((windowIdName, focusTime) in windows) {
 					HomeCard(
-						showEditDialog,
-						windowIdName.first,
-						windowIdName.second,
-						focusTime,
-						selected
+						showEditDialog, windowIdName.first, windowIdName.second, focusTime, selected
 					)
 				}
 			}
@@ -191,11 +179,7 @@ private fun HomeCard(
 	selected: MutableState<List<String>>, // The selected cards
 ) {
 	val navigator = LocalNavigator.currentOrThrow
-	Card(
-		modifier = Modifier
-			.fillMaxWidth(0.33f)
-			.padding(8.dp)
-			.aspectRatio(2f),
+	Card(modifier = Modifier.fillMaxWidth(0.33f).padding(8.dp).aspectRatio(2f),
 		elevation = 4.dp,
 		onClick = {
 			// Go to the window info screen
@@ -211,14 +195,12 @@ private fun HomeCard(
 					Database.getMousePositions(windowId),
 				)
 			)
-		}
-	) {
+		}) {
 		var contextMenuExpanded by remember { mutableStateOf(false) }
 		Box(modifier = Modifier.fillMaxSize()) {
 			// Text at the top left
 			Text(
-				text = windowName,
-				modifier = Modifier.align(Alignment.TopStart).padding(16.dp)
+				text = windowName, modifier = Modifier.align(Alignment.TopStart).padding(16.dp)
 			)
 			
 			// Buttons at the top right
@@ -270,8 +252,7 @@ private fun HomeCard(
 			
 			// Checkbox at the bottom right
 			Checkbox(
-				checked = selected.value.contains(windowId),
-				onCheckedChange = {
+				checked = selected.value.contains(windowId), onCheckedChange = {
 					if (it) {
 						Database.selectWindow(windowId)
 						selected.value += windowId
@@ -279,8 +260,7 @@ private fun HomeCard(
 						Database.deselectWindow(windowId)
 						selected.value -= windowId
 					}
-				},
-				modifier = Modifier.align(Alignment.BottomEnd).padding(8.dp)
+				}, modifier = Modifier.align(Alignment.BottomEnd).padding(8.dp)
 			)
 		}
 	}
@@ -296,12 +276,10 @@ private fun EditTitleDialog(
 	
 	var title by remember { mutableStateOf(showEditDialog.value!!.second) }
 	
-	Dialog(
-		onDismissRequest = {
-			// Close the dialog
-			showEditDialog.value = null
-		}
-	) {
+	Dialog(onDismissRequest = {
+		// Close the dialog
+		showEditDialog.value = null
+	}) {
 		Card {
 			Column(
 				modifier = Modifier.padding(16.dp),
@@ -321,8 +299,10 @@ private fun EditTitleDialog(
 					},
 					modifier = Modifier.fillMaxWidth().padding(8.dp).onKeyEvent {
 						if (it.key != Key.Enter) return@onKeyEvent false
-						if (it.type == KeyEventType.KeyUp)
-							saveChanges(showEditDialog, title.replace("\n", ""))
+						if (it.type == KeyEventType.KeyUp) saveChanges(
+							showEditDialog,
+							title.replace("\n", "")
+						)
 						true
 					},
 					colors = TextFieldDefaults.textFieldColors(
@@ -335,23 +315,19 @@ private fun EditTitleDialog(
 					horizontalArrangement = Arrangement.Center,
 				) {
 					// Show a button to save the changes
-					Button(
-						onClick = {
-							saveChanges(showEditDialog, title)
-						}
-					) {
+					Button(onClick = {
+						saveChanges(showEditDialog, title)
+					}) {
 						Text("Save")
 					}
 					
 					Spacer(modifier = Modifier.width(8.dp))
 					
 					// Show a button to cancel the changes
-					Button(
-						onClick = {
-							// Close the dialog
-							showEditDialog.value = null
-						}
-					) {
+					Button(onClick = {
+						// Close the dialog
+						showEditDialog.value = null
+					}) {
 						Text("Cancel")
 					}
 				}
