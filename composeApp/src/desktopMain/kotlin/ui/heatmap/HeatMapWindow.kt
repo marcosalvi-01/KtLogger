@@ -480,6 +480,7 @@ private fun KeyLayer(
 				)
 				clickedKey?.let {
 					changeKeyDialogState.value = ChangeKeyDialog(
+						currentKey = layer.getKey(it.first, it.second)!!,
 						keyLayer = layer,
 						row = it.first,
 						col = it.second,

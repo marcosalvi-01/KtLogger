@@ -1,5 +1,7 @@
 package keyboard
 
+import java.util.*
+
 
 enum class KC(
 	val symbol: String,
@@ -32,7 +34,7 @@ enum class KC(
 	X("X"),
 	Y("Y"),
 	Z("Z"),
-
+	
 	// -------- SYMBOLS --------
 	COMMA(","),
 	SEMICOLON(";"),
@@ -71,8 +73,8 @@ enum class KC(
 	DEGREE("°"),
 	SECTION("§"),
 	CEDILLA("ç"),
-
-
+	
+	
 	// -------- UTILITIES --------
 	SPACE("Space", "␣"),
 	ENTER("Enter", "↩"),
@@ -81,7 +83,7 @@ enum class KC(
 	ESCAPE("Escape", "⎋"),
 	DELETE("Delete", "⌦"),
 	INSERT("Insert", "⎀"),
-
+	
 	// -------- NAVIGATION --------
 	HOME("Home", "⇤"),
 	END("End", "⇥"),
@@ -91,7 +93,7 @@ enum class KC(
 	DOWN("Down", "↓"),
 	LEFT("Left", "←"),
 	RIGHT("Right", "→"),
-
+	
 	// -------- MEDIA KEYS --------
 	PAUSE_PLAY("Pause/Play", "⏯"),
 	NEXT_TRACK("Next Track", "⏭"),
@@ -99,13 +101,13 @@ enum class KC(
 	MUTE("Mute"),
 	VOLUME_UP("Volume Up", "🔊"),
 	VOLUME_DOWN("Volume Down", "🔉"),
-
+	
 	// -------- LOCK MODIFIERS --------
 	CAPS_LOCK("Caps Lock", "⇪"),
 	NUM_LOCK("Num Lock", "⇭"),
 	SCROLL_LOCK("Scroll Lock", "⇳"),
 	PRINT_SCREEN("Print Screen", "⎙"),
-
+	
 	// -------- FUNCTION KEYS --------
 	F1("F1"),
 	F2("F2"),
@@ -119,7 +121,7 @@ enum class KC(
 	F10("F10"),
 	F11("F11"),
 	F12("F12"),
-
+	
 	// -------- NUMBERS --------
 	ONE("1"),
 	TWO("2"),
@@ -131,7 +133,7 @@ enum class KC(
 	EIGHT("8"),
 	NINE("9"),
 	ZERO("0"),
-
+	
 	// -------- NUMPAD --------
 	NUMPAD_0("Numpad 0", "N0"),
 	NUMPAD_1("Numpad 1", "N1"),
@@ -143,7 +145,7 @@ enum class KC(
 	NUMPAD_7("Numpad 7", "N7"),
 	NUMPAD_8("Numpad 8", "N8"),
 	NUMPAD_9("Numpad 9", "N9"),
-
+	
 	// -------- MODIFIERS --------
 	SHIFT_LEFT("Shift", "⇧"),
 	SHIFT_RIGHT("Shift", "⇧"),
@@ -153,7 +155,7 @@ enum class KC(
 	ALT_RIGHT("Alt", "⌥"),
 	GUI_LEFT("Windows", "⌘"),
 	GUI_RIGHT("Windows", "⌘"),
-
+	
 	// -------- GRAVED LETTERS --------
 	A_GRAVE("à"),
 	E_GRAVE("è"),
@@ -161,15 +163,15 @@ enum class KC(
 	I_GRAVE("ì"),
 	O_GRAVE("ò"),
 	U_GRAVE("ù"),
-
+	
 	// -------- UNKNOWN --------
 	UNKNOWN("Unknown"),
-
+	
 	// -------- EMPTY --------
 	EMPTY("")
-
+	
 	;
-
+	
 	fun isModifier(): Boolean {
 		return this in listOf(
 			SHIFT_LEFT,
@@ -182,17 +184,28 @@ enum class KC(
 			GUI_RIGHT
 		)
 	}
-
+	
 	fun isLetter(): Boolean {
 		return this in listOf(
 			A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
 			A_GRAVE, E_GRAVE, E_ACUTE, I_GRAVE, O_GRAVE, U_GRAVE
 		)
 	}
-
+	
 	companion object {
 		fun getKC(symbol: String): KC {
 			return entries.find { it.symbol == symbol } ?: UNKNOWN
 		}
+	}
+	
+	// For filtering using a string
+	fun metadata(): String? {
+		return if (this == EMPTY) null else "$symbol $unicode $name"
+	}
+	
+	// Name to camel case
+	override fun toString(): String {
+		return name.replace("_", " ").lowercase(Locale.getDefault())
+			.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
 	}
 }

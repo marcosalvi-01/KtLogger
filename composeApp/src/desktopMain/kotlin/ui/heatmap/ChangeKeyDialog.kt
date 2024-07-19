@@ -1,19 +1,20 @@
 package ui.heatmap
 
+import DropdownMenuNoPaddingVeitical
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Button
 import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.Card
+import androidx.compose.material.Divider
 import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.ExposedDropdownMenuBox
@@ -29,13 +30,16 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.PopupProperties
 import keyboard.AbstractKeyLayer
 import keyboard.KC
 import keyboard.LayerKey
 
 data class ChangeKeyDialog(
+	val currentKey: LayerKey,
 	val keyLayer: AbstractKeyLayer,
 	val row: Int,
 	val col: Int,
@@ -48,17 +52,13 @@ data class ChangeKeyDialog(
 fun ChangeKeyDialog(state: ChangeKeyDialog) {
 	Dialog(onDismissRequest = state.onDismiss) {
 		Card(
-			modifier = Modifier
-				.fillMaxWidth()
-				.padding(16.dp),
+			modifier = Modifier.fillMaxWidth().padding(16.dp),
 			shape = RoundedCornerShape(16.dp),
 			backgroundColor = MaterialTheme.colors.surface,
 			elevation = 0.dp
 		) {
 			Column(
-				modifier = Modifier
-					.padding(24.dp)
-					.fillMaxWidth(),
+				modifier = Modifier.padding(24.dp).fillMaxWidth(),
 				verticalArrangement = Arrangement.spacedBy(16.dp)
 			) {
 				Text(
@@ -67,47 +67,65 @@ fun ChangeKeyDialog(state: ChangeKeyDialog) {
 					color = MaterialTheme.colors.onSurface
 				)
 				
-				val options = remember { KC.entries }
+				val options = remember { KC.entries.toList() }
 				var expanded by remember { mutableStateOf(false) }
-				var selectedOption by remember { mutableStateOf(options.firstOrNull()) }
+				var selectedOption by remember { mutableStateOf(state.currentKey.kc) }
+				var textFieldValue by remember { mutableStateOf(state.currentKey.kc.toString()) }
+				var filteredOptions by remember { mutableStateOf(options) }
 				
-				ExposedDropdownMenuBox(
-					expanded = expanded,
-					onExpandedChange = { expanded = !expanded }
-				) {
+				
+				ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
 					OutlinedTextField(
-						value = selectedOption?.name ?: "",
-						onValueChange = {},
-						readOnly = true,
-						label = { Text("Select Key") },
+						value = textFieldValue,
+						singleLine = true,
+						onValueChange = {
+							textFieldValue = it
+							selectedOption = KC.entries.find { kc -> kc.name == it } ?: KC.EMPTY
+							filteredOptions = options.filter { kc ->
+								kc.metadata()?.contains(textFieldValue, ignoreCase = true) ?: false
+							}
+							expanded = true
+						},
+						label = { Text("Select or Type Key") },
 						trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
 						modifier = Modifier.fillMaxWidth(),
 						colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors()
 					)
 					
-					ExposedDropdownMenu(
+					DropdownMenuNoPaddingVeitical(
+						modifier = Modifier.exposedDropdownSize(true),
+						properties = PopupProperties(focusable = false),
 						expanded = expanded,
 						onDismissRequest = { expanded = false },
-						modifier = Modifier
-							.verticalScroll(rememberScrollState())
-							.heightIn(max = 300.dp)
 					) {
-						options.forEach { option ->
-							DropdownMenuItem(
-								onClick = {
-									selectedOption = option
-									expanded = false
+						Row(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+							// Headers: Name, Symbol, Unicode
+							DropdownCustomRow("Name", false)
+							DropdownCustomRow("Symbol", false)
+							DropdownCustomRow("Unicode", false)
+						}
+						Divider(
+							color = MaterialTheme.colors.onSurface.copy(alpha = 0.5f),
+							modifier = Modifier.padding(horizontal = 8.dp)
+						)
+						filteredOptions.forEach { option ->
+							DropdownMenuItem(onClick = {
+								selectedOption = option
+								textFieldValue = option.name
+								expanded = false
+							}) {
+								Row(modifier = Modifier.fillMaxWidth()) {
+									DropdownCustomRow(option.toString())
+									DropdownCustomRow(option.symbol)
+									DropdownCustomRow(option.unicode)
 								}
-							) {
-								Text(option.name)
 							}
 						}
 					}
 				}
 				
 				Row(
-					modifier = Modifier.fillMaxWidth(),
-					horizontalArrangement = Arrangement.End
+					modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End
 				) {
 					OutlinedButton(
 						onClick = { state.onConfirm(state.row, state.col, LayerKey(KC.EMPTY)) },
@@ -121,8 +139,7 @@ fun ChangeKeyDialog(state: ChangeKeyDialog) {
 					Spacer(modifier = Modifier.weight(1f))
 					
 					TextButton(
-						onClick = state.onDismiss,
-						colors = ButtonDefaults.textButtonColors(
+						onClick = state.onDismiss, colors = ButtonDefaults.textButtonColors(
 							contentColor = MaterialTheme.colors.onSurface.copy(alpha = 0.6f)
 						)
 					) {
@@ -131,15 +148,11 @@ fun ChangeKeyDialog(state: ChangeKeyDialog) {
 					Spacer(modifier = Modifier.width(8.dp))
 					Button(
 						onClick = {
-							selectedOption?.let {
-								state.onConfirm(
-									state.row,
-									state.col,
-									LayerKey(it)
-								)
-							}
+							state.onConfirm(
+								state.row, state.col, LayerKey(selectedOption)
+							)
 						},
-						enabled = selectedOption != null,
+						enabled = selectedOption != KC.EMPTY,
 						colors = ButtonDefaults.buttonColors(
 							backgroundColor = MaterialTheme.colors.primary,
 							contentColor = MaterialTheme.colors.onPrimary
@@ -151,4 +164,26 @@ fun ChangeKeyDialog(state: ChangeKeyDialog) {
 			}
 		}
 	}
+}
+
+@Composable
+internal fun RowScope.DropdownCustomRow(
+	text: String,
+	background: Boolean = true,
+) {
+	val modifier = if (background) {
+		Modifier.weight(1f)
+			.padding(horizontal = 16.dp)
+			.background(MaterialTheme.colors.secondaryVariant, RoundedCornerShape(6.dp))
+			.padding(top = 4.dp, bottom = 5.dp)
+	} else {
+		Modifier.weight(1f)
+	}
+	
+	Text(
+		text = text,
+		modifier = modifier,
+		textAlign = TextAlign.Center,
+		color = MaterialTheme.colors.onSecondary
+	)
 }
