@@ -63,7 +63,7 @@ compose.desktop {
 			}
 
 			packageName = "KtLogger"
-			packageVersion = "1.0.0"
+			packageVersion = "1.0.1"
 			modules("java.sql")
 		}
 	}
