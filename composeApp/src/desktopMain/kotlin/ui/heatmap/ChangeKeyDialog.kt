@@ -25,11 +25,13 @@ import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.Text
 import androidx.compose.material.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -37,6 +39,7 @@ import androidx.compose.ui.window.PopupProperties
 import keyboard.AbstractKeyLayer
 import keyboard.KC
 import keyboard.LayerKey
+import logger.KeyboardLogger.keyPresses
 
 data class ChangeKeyDialog(
 	val currentKey: LayerKey,
@@ -72,7 +75,13 @@ fun ChangeKeyDialog(state: ChangeKeyDialog) {
 				var selectedOption by remember { mutableStateOf(state.currentKey.kc) }
 				var textFieldValue by remember { mutableStateOf(state.currentKey.kc.toString()) }
 				var filteredOptions by remember { mutableStateOf(options) }
+				var isDetecting by remember { mutableStateOf(false) }
+				val pressedKey by keyPresses.collectAsState(KC.EMPTY)
 				
+				if (isDetecting && pressedKey != KC.EMPTY) {
+					selectedOption = pressedKey
+					textFieldValue = pressedKey.toString()
+				}
 				
 				ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
 					OutlinedTextField(
@@ -89,13 +98,16 @@ fun ChangeKeyDialog(state: ChangeKeyDialog) {
 						label = { Text("Select or Type Key") },
 						trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
 						modifier = Modifier.fillMaxWidth(),
-						colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors()
+						colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+						// Disable the text field when detecting a key
+						readOnly = isDetecting,
 					)
 					
 					DropdownMenuNoPaddingVeitical(
 						modifier = Modifier.exposedDropdownSize(true),
 						properties = PopupProperties(focusable = false),
-						expanded = expanded,
+						// don't show the dropdown if detecting the key
+						expanded = expanded && !isDetecting,
 						onDismissRequest = { expanded = false },
 					) {
 						Row(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
@@ -124,6 +136,15 @@ fun ChangeKeyDialog(state: ChangeKeyDialog) {
 					}
 				}
 				
+				if (isDetecting) {
+					Text(
+						"Right now there are some issues with detecting modified keys (symbols like @, #, etc.), " +
+								"please use the search dropdown to select those keys.",
+						// Warning
+						color = Color(0xffffc02c),
+					)
+				}
+				
 				Row(
 					modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End
 				) {
@@ -134,6 +155,24 @@ fun ChangeKeyDialog(state: ChangeKeyDialog) {
 						)
 					) {
 						Text("Clear key")
+					}
+					
+					Spacer(modifier = Modifier.padding(horizontal = 8.dp))
+					
+					// Detect key
+					OutlinedButton(
+						onClick = {
+							isDetecting = !isDetecting
+						},
+						colors = if (!isDetecting) ButtonDefaults.buttonColors(
+							backgroundColor = MaterialTheme.colors.primary,
+							contentColor = MaterialTheme.colors.onPrimary
+						) else ButtonDefaults.buttonColors(
+							backgroundColor = MaterialTheme.colors.secondary,
+							contentColor = MaterialTheme.colors.onSecondary
+						)
+					) {
+						Text(if (!isDetecting) "Detect key" else "Detecting key...")
 					}
 					
 					Spacer(modifier = Modifier.weight(1f))

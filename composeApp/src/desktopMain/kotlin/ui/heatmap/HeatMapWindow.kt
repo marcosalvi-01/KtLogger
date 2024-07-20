@@ -236,21 +236,6 @@ fun KeymapSelector(
 						modifier = Modifier.size(20.dp)
 					)
 				}
-				
-				// Edit button
-				IconButton(
-					onClick = {
-						showKeymapsDropdown = false
-						TODO()
-					}, modifier = Modifier.size(32.dp)
-				) {
-					Icon(
-						imageVector = Icons.Filled.Edit,
-						contentDescription = "Edit",
-						tint = MaterialTheme.colors.onSurface.copy(alpha = 0.7f),
-						modifier = Modifier.size(20.dp)
-					)
-				}
 			}
 			if (keymap != keymaps.last()) {
 				Divider(color = MaterialTheme.colors.onSurface.copy(alpha = 0.1f))
