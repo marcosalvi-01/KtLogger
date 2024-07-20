@@ -30,6 +30,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
@@ -83,7 +84,7 @@ fun ChangeKeyDialog(state: ChangeKeyDialog) {
 					textFieldValue = pressedKey.toString()
 				}
 				
-				ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
+				ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
 					OutlinedTextField(
 						value = textFieldValue,
 						singleLine = true,
@@ -126,7 +127,7 @@ fun ChangeKeyDialog(state: ChangeKeyDialog) {
 								textFieldValue = option.name
 								expanded = false
 							}) {
-								Row(modifier = Modifier.fillMaxWidth()) {
+								Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
 									DropdownCustomRow(option.toString())
 									DropdownCustomRow(option.symbol)
 									DropdownCustomRow(option.unicode)
@@ -212,9 +213,10 @@ internal fun RowScope.DropdownCustomRow(
 ) {
 	val modifier = if (background) {
 		Modifier.weight(1f)
-			.padding(horizontal = 16.dp)
+			.align(Alignment.CenterVertically)
+			.padding(horizontal = 8.dp)
 			.background(MaterialTheme.colors.secondaryVariant, RoundedCornerShape(6.dp))
-			.padding(top = 4.dp, bottom = 5.dp)
+			.padding(top = 4.dp, bottom = 5.dp, start = 8.dp, end = 8.dp)
 	} else {
 		Modifier.weight(1f)
 	}
