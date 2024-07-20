@@ -28,6 +28,6 @@ directory (`C:\Program Files\KtLogger`).
 
 ## TODO
 
-- [ ] Abstract the keymap to make it easily configurable
+- [x] Abstract the keymap to make it easily configurable
 - [ ] Add a way to import/export the data
 - [ ] Abstract the logger layer to make it easy to add new loggers for different systems
