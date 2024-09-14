@@ -192,6 +192,48 @@ enum class KC(
 		)
 	}
 	
+	fun isSymbol(): Boolean {
+		return this in listOf(
+			COMMA, SEMICOLON, PERIOD, COLON, MINUS, UNDERSCORE, APOSTROPHE, QUESTION_MARK,
+			BACK_SLASH, SLASH, PIPE, EXCLAMATION_MARK, AT, HASH, DOLLAR, PERCENT,
+			CIRCUMFLEX, AMPERSAND, ASTERISK, LEFT_PARENTHESIS, RIGHT_PARENTHESIS,
+			LEFT_SQUARE_BRACKET, RIGHT_SQUARE_BRACKET, LEFT_CURLY_BRACKET, RIGHT_CURLY_BRACKET,
+			LESS, GREATER, PLUS, EQUAL, BACK_QUOTE, TILDE, QUOTE, POUND, EURO, DEGREE,
+			SECTION, CEDILLA
+		)
+	}
+	
+	fun isNumber(): Boolean {
+		return this in listOf(
+			ONE,
+			TWO,
+			THREE,
+			FOUR,
+			FIVE,
+			SIX,
+			SEVEN,
+			EIGHT,
+			NINE,
+			ZERO,
+			NUMPAD_0,
+			NUMPAD_1,
+			NUMPAD_2,
+			NUMPAD_3,
+			NUMPAD_4,
+			NUMPAD_5,
+			NUMPAD_6,
+			NUMPAD_7,
+			NUMPAD_8,
+			NUMPAD_9
+		)
+	}
+	
+	fun isNavigation(): Boolean {
+		return this in listOf(
+			HOME, END, PAGE_UP, PAGE_DOWN, UP, DOWN, LEFT, RIGHT
+		)
+	}
+	
 	companion object {
 		fun getKC(symbol: String): KC {
 			return entries.find { it.symbol == symbol } ?: UNKNOWN

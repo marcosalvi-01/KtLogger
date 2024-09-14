@@ -220,7 +220,7 @@ internal fun RowScope.DropdownCustomRow(
 	val modifier = if (background) {
 		Modifier.weight(1f)
 			.align(Alignment.CenterVertically)
-			.padding(horizontal = 8.dp)
+			.padding(horizontal = 24.dp)
 			.background(MaterialTheme.colors.secondaryVariant, RoundedCornerShape(6.dp))
 			.padding(top = 4.dp, bottom = 5.dp, start = 8.dp, end = 8.dp)
 	} else {
