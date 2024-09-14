@@ -40,7 +40,10 @@ import androidx.compose.ui.window.PopupProperties
 import keyboard.AbstractKeyLayer
 import keyboard.KC
 import keyboard.LayerKey
-import logger.KeyboardLogger.keyPresses
+import logger.windows.WindowsKeyPressesLogger.dataFlow
+
+//import logger.KeyboardLogger.keyPresses
+
 
 data class ChangeKeyDialog(
 	val currentKey: LayerKey,
@@ -77,14 +80,17 @@ fun ChangeKeyDialog(state: ChangeKeyDialog) {
 				var textFieldValue by remember { mutableStateOf(state.currentKey.kc.toString()) }
 				var filteredOptions by remember { mutableStateOf(options) }
 				var isDetecting by remember { mutableStateOf(false) }
-				val pressedKey by keyPresses.collectAsState(KC.EMPTY)
+//				val pressedKey by keyPresses.collectAsState(KC.EMPTY)
+				val pressedKey by dataFlow.collectAsState(null)
 				
-				if (isDetecting && pressedKey != KC.EMPTY) {
-					selectedOption = pressedKey
-					textFieldValue = pressedKey.toString()
+				if (isDetecting && pressedKey != null) {
+					selectedOption = pressedKey!!.data.key
+					textFieldValue = pressedKey!!.data.key.toString()
 				}
 				
-				ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
+				ExposedDropdownMenuBox(
+					expanded = expanded,
+					onExpandedChange = { expanded = !expanded }) {
 					OutlinedTextField(
 						value = textFieldValue,
 						singleLine = true,

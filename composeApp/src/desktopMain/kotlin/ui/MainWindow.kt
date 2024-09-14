@@ -42,8 +42,8 @@ import icon
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import logger.SystemLogger
 import logger.format
+import logger.windows.WindowsSystemLogger
 
 @Composable
 fun MainWindow(
@@ -95,16 +95,16 @@ fun MainWindow(
 									actions = {
 										Spacer(modifier = Modifier.padding(15.dp))
 										// Icon to show if the logger is running
-										val isRunning by SystemLogger.isRunning.collectAsState()
+										val isRunning by WindowsSystemLogger.isRunning.collectAsState()
 										ColorChangingDot(
 											isRunning,
 											"Logger is running",
 											"Logger is not running"
 										) {
 											if (isRunning)
-												SystemLogger.stop()
+												WindowsSystemLogger.stop()
 											else
-												SystemLogger.start()
+												WindowsSystemLogger.start()
 										}
 										
 										// TODO implement the refresh button in the window info screen
@@ -114,7 +114,7 @@ fun MainWindow(
 												onClick = {
 													// Refresh the data
 													CoroutineScope(Dispatchers.Default).launch {
-														SystemLogger.saveData()
+														WindowsSystemLogger.saveData()
 														Database.loadData()
 													}
 												},

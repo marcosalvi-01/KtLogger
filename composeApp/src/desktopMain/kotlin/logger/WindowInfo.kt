@@ -1,10 +1,24 @@
 package logger
 
-import database.*
+import database.Bigrams
+import database.KeyPresses
+import database.MouseButtons
+import database.MousePositions
+import database.ScrollDirections
+import database.Trigrams
+import database.Windows
 import keyboard.KC
-import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.plus
+import org.jetbrains.exposed.sql.batchUpsert
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.sql.upsert
+import kotlin.collections.associateBy
+import kotlin.collections.listOf
+import kotlin.collections.mutableMapOf
+import kotlin.collections.set
+import kotlin.collections.toList
+import kotlin.collections.toMap
 import kotlin.time.Duration
 import kotlin.time.TimeMark
 import kotlin.time.TimeSource
@@ -92,7 +106,7 @@ class WindowInfo(
 		val newKeyPresses = keyPresses.toMap()
 		keyPresses.clear()
 		
-		val existingKeyPresses = KeyPresses.select { KeyPresses.windowId eq this@WindowInfo.id }
+		val existingKeyPresses = KeyPresses.selectAll().where { KeyPresses.windowId eq id }
 			.associateBy({ KC.getKC(it[KeyPresses.kc]) }, { it[KeyPresses.count] })
 		
 		KeyPresses.batchUpsert(newKeyPresses.keys.toList()) {
@@ -105,7 +119,7 @@ class WindowInfo(
 	private fun upsertBigrams() {
 		// Save the current bigrams and clear the map
 		val existingBigrams =
-			Bigrams.select { Bigrams.windowId eq this@WindowInfo.id }
+			Bigrams.selectAll().where { Bigrams.windowId eq id }
 				.associateBy(
 					{ Pair(KC.getKC(it[Bigrams.kc1]), KC.getKC(it[Bigrams.kc2])) },
 					{ it[Bigrams.count] })
@@ -125,7 +139,7 @@ class WindowInfo(
 	private fun upsertTrigrams() {
 		// Save the current trigrams and clear the map
 		val existingTrigrams =
-			Trigrams.select { Trigrams.windowId eq this@WindowInfo.id }
+			Trigrams.selectAll().where { Trigrams.windowId eq id }
 				.associateBy(
 					{
 						Triple(
@@ -156,7 +170,7 @@ class WindowInfo(
 		
 		// Fetch all the existing mouse positions for the current window
 		val existingMouseMovements =
-			MousePositions.select { MousePositions.windowId eq this@WindowInfo.id }
+			MousePositions.selectAll().where { MousePositions.windowId eq id }
 				.associateBy(
 					{ Position(it[MousePositions.x], it[MousePositions.y]) },
 					{ it[MousePositions.count] })
@@ -177,7 +191,7 @@ class WindowInfo(
 		mouseButtons.clear()
 		
 		val existingMouseButtons =
-			MouseButtons.select { MouseButtons.windowId eq this@WindowInfo.id }
+			MouseButtons.selectAll().where { MouseButtons.windowId eq id }
 				.associateBy(
 					{ MouseButton.valueOf(it[MouseButtons.button]) },
 					{ it[MouseButtons.count] })
@@ -197,7 +211,7 @@ class WindowInfo(
 		
 		// Fetch all the existing scroll directions for the current window
 		val existingScrollDirections =
-			ScrollDirections.select { ScrollDirections.windowId eq this@WindowInfo.id }
+			ScrollDirections.selectAll().where { ScrollDirections.windowId eq id }
 				.associateBy(
 					{ ScrollDirection.valueOf(it[ScrollDirections.direction]) },
 					{ it[ScrollDirections.count] })

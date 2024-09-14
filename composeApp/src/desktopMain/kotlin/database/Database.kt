@@ -2,7 +2,6 @@ package database
 
 import keyboard.AbstractKeymap
 import keyboard.KC
-import keyboard.defaultKeymap
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -15,7 +14,6 @@ import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.andWhere
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
@@ -47,11 +45,6 @@ object Database {
 				Selected,
 				Keymaps,
 			)
-			
-			// Create the default keymap if it doesn't exist
-			if (Keymaps.selectAll().count().toInt() == 0) {
-				createKeymap(defaultKeymap)
-			}
 		}
 	}
 	
@@ -70,7 +63,8 @@ object Database {
 	
 	fun loadWindows(): Map<Pair<String, String>, Duration> =
 		transaction {
-			Windows.select(
+			Windows.selectAll(
+			).where(
 				Windows.hidden eq false
 			).associate {
 				Pair(it[Windows.id], it[Windows.name]) to it[Windows.activeTime]
@@ -97,7 +91,7 @@ object Database {
 	
 	fun getFocusTime(windowId: String): Duration {
 		return transaction {
-			Windows.select { Windows.id eq windowId }
+			Windows.selectAll().where { Windows.id eq windowId }
 				.map { it[Windows.activeTime] }
 				.reduceOrNull { acc, duration -> acc + duration } ?: Duration.ZERO
 		}
@@ -105,7 +99,7 @@ object Database {
 	
 	fun getFocusTime(windowIds: List<String>): Duration {
 		return transaction {
-			Windows.select { Windows.id inList windowIds }
+			Windows.selectAll().where { Windows.id inList windowIds }
 				.map { it[Windows.activeTime] }
 				.reduceOrNull { acc, duration -> acc + duration } ?: Duration.ZERO
 		}
@@ -124,14 +118,14 @@ object Database {
 	
 	fun getKeyPresses(windowId: String): Map<KC, Int> {
 		return transaction {
-			KeyPresses.select { KeyPresses.windowId eq windowId }
+			KeyPresses.selectAll().where { KeyPresses.windowId eq windowId }
 				.associate { KC.getKC(it[KeyPresses.kc]) to it[KeyPresses.count] }
 		}
 	}
 	
 	fun getKeyPresses(windowIds: List<String>): Map<KC, Int> {
 		return transaction {
-			KeyPresses.select { KeyPresses.windowId inList windowIds }
+			KeyPresses.selectAll().where { KeyPresses.windowId inList windowIds }
 				.groupBy { it[KeyPresses.kc] }
 				.mapValues { entry ->
 					entry.value.sumOf { it[KeyPresses.count] }
@@ -157,7 +151,7 @@ object Database {
 	
 	fun getBigrams(windowId: String): Map<Pair<KC, KC>, Int> {
 		return transaction {
-			Bigrams.select { Bigrams.windowId eq windowId }
+			Bigrams.selectAll().where { Bigrams.windowId eq windowId }
 				.associate {
 					Pair(
 						KC.getKC(it[Bigrams.kc1]),
@@ -169,7 +163,7 @@ object Database {
 	
 	fun getBigrams(windowIds: List<String>): Map<Pair<KC, KC>, Int> {
 		return transaction {
-			Bigrams.select { Bigrams.windowId inList windowIds }
+			Bigrams.selectAll().where { Bigrams.windowId inList windowIds }
 				.groupBy { it[Bigrams.kc1] to it[Bigrams.kc2] }
 				.mapValues { entry ->
 					entry.value.sumOf { it[Bigrams.count] }
@@ -199,7 +193,7 @@ object Database {
 	
 	fun getTrigrams(windowId: String): Map<Triple<KC, KC, KC>, Int> {
 		return transaction {
-			Trigrams.select { Trigrams.windowId eq windowId }
+			Trigrams.selectAll().where { Trigrams.windowId eq windowId }
 				.associate {
 					Triple(
 						KC.getKC(it[Trigrams.kc1]),
@@ -212,7 +206,7 @@ object Database {
 	
 	fun getTrigrams(windowIds: List<String>): Map<Triple<KC, KC, KC>, Int> {
 		return transaction {
-			Trigrams.select { Trigrams.windowId inList windowIds }
+			Trigrams.selectAll().where { Trigrams.windowId inList windowIds }
 				.groupBy {
 					Triple(
 						KC.getKC(it[Trigrams.kc1]),
@@ -238,7 +232,7 @@ object Database {
 	
 	fun getMousePositions(windowId: String): Map<Position, Int> {
 		return transaction {
-			MousePositions.select { MousePositions.windowId eq windowId }
+			MousePositions.selectAll().where { MousePositions.windowId eq windowId }
 				.associate {
 					Position(
 						it[MousePositions.x],
@@ -250,7 +244,7 @@ object Database {
 	
 	fun getMousePositions(windowIds: List<String>): Map<Position, Int> {
 		return transaction {
-			MousePositions.select { MousePositions.windowId inList windowIds }
+			MousePositions.selectAll().where { MousePositions.windowId inList windowIds }
 				.associate {
 					Position(
 						it[MousePositions.x],
@@ -273,14 +267,14 @@ object Database {
 	
 	fun getMouseButtons(windowId: String): Map<MouseButton, Int> {
 		return transaction {
-			MouseButtons.select { MouseButtons.windowId eq windowId }
+			MouseButtons.selectAll().where { MouseButtons.windowId eq windowId }
 				.associate { MouseButton.getMouseButton(it[MouseButtons.button]) to it[MouseButtons.count] }
 		}
 	}
 	
 	fun getMouseButtons(windowIds: List<String>): Map<MouseButton, Int> {
 		return transaction {
-			MouseButtons.select { MouseButtons.windowId inList windowIds }
+			MouseButtons.selectAll().where { MouseButtons.windowId inList windowIds }
 				.groupBy { MouseButton.getMouseButton(it[MouseButtons.button]) }
 				.mapValues { entry ->
 					entry.value.sumOf { it[MouseButtons.count] }
@@ -300,14 +294,14 @@ object Database {
 	
 	fun getScrollDirections(windowId: String): Map<logger.ScrollDirection, Int> {
 		return transaction {
-			ScrollDirections.select { ScrollDirections.windowId eq windowId }
+			ScrollDirections.selectAll().where { ScrollDirections.windowId eq windowId }
 				.associate { logger.ScrollDirection.getScrollDirection(it[ScrollDirections.direction]) to it[ScrollDirections.count] }
 		}
 	}
 	
 	fun getScrollDirections(windowIds: List<String>): Map<logger.ScrollDirection, Int> {
 		return transaction {
-			ScrollDirections.select { ScrollDirections.windowId inList windowIds }
+			ScrollDirections.selectAll().where { ScrollDirections.windowId inList windowIds }
 				.groupBy { logger.ScrollDirection.getScrollDirection(it[ScrollDirections.direction]) }
 				.mapValues { entry ->
 					entry.value.sumOf { it[ScrollDirections.count] }
@@ -368,7 +362,7 @@ object Database {
 	
 	fun getKeymap(name: String): AbstractKeymap? {
 		return transaction {
-			Keymaps.select { Keymaps.name eq name }
+			Keymaps.selectAll().where { Keymaps.name eq name }
 				.map { it[Keymaps.keymap] }
 				.firstOrNull()
 		}

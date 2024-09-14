@@ -12,7 +12,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import logger.SystemLogger
+import logger.windows.WindowsSystemLogger
 import ui.MainWindow
 import ui.matteBlueTheme
 import java.awt.Button
@@ -52,7 +52,7 @@ fun main() {
 	// Initialize the db
 	Database.connect()
 	// Start the logger
-	SystemLogger.start()
+	WindowsSystemLogger.start()
 	// Start the loop to save and load the data
 	loopSaveAndLoad()
 	
@@ -72,21 +72,21 @@ fun main() {
 			Tray(
 				icon = icon,
 				menu = {
-					// Add key presses from file
-					Item("Exit") {
-						// Close the app
-						exitApplication()
-					}
-					
-					val isRunning by SystemLogger.isRunning.collectAsState()
+					val isRunning by WindowsSystemLogger.isRunning.collectAsState()
 					Item(
 						if (isRunning) "Stop Logger" else "Start Logger"
 					) {
 						// Start or stop the logger
 						if (isRunning)
-							SystemLogger.stop()
+							WindowsSystemLogger.stop()
 						else
-							SystemLogger.start()
+							WindowsSystemLogger.start()
+					}
+					
+					// Add key presses from file
+					Item("Exit") {
+						// Close the app
+						exitApplication()
 					}
 				},
 				onAction = {
@@ -107,7 +107,7 @@ private fun loopSaveAndLoad() {
 			// Delay
 			delay(loopDelay.inWholeMilliseconds)
 			// Save the data
-			SystemLogger.saveData()
+			WindowsSystemLogger.saveData()
 			// Reload the windows
 			Database.loadData()
 		}
