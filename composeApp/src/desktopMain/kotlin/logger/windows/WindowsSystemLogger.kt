@@ -69,8 +69,8 @@ object WindowsSystemLogger : SystemLogger {
 	private fun elaborateData() {
 		// Increase the key press count of the key in the active window
 		scope.launch {
-			WindowsKeyPressesLogger.dataFlow.collect { data ->
-				getWindowInfo(WindowsWindowLogger.dataFlow.value.data.name)?.addKeyPress(data.data.key)
+			WindowsKeyPressesLogger.dataFlow.collect { (data, time) ->
+				getWindowInfo(WindowsWindowLogger.dataFlow.value.data.name)?.addKeyPress(data.key)
 			}
 		}
 		// Handle the mouse events
